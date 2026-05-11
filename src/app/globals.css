@@ -188,3 +188,29 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: 2px solid #0a0a0a;
 }
+
+/* Gradient border spin animation */
+@keyframes gradient-border-spin {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Shimmer gradient for badge */
+.shimmer-gradient {
+  background: linear-gradient(110deg, transparent 33%, rgba(16, 185, 129, 0.15) 50%, transparent 67%);
+  background-size: 300% 100%;
+  animation: shimmer-slide 3s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Gradient text shift animation */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}

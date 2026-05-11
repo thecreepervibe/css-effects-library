@@ -3,8 +3,8 @@
 import { useEffectsStore } from '@/lib/effects-store';
 import { getTagCounts, effects, collections } from '@/lib/effects-data';
 import type { Difficulty } from '@/lib/effects-data';
-import { LayoutGrid, List, Shuffle, Keyboard } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { LayoutGrid, List, Shuffle, Keyboard, X } from 'lucide-react';
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function FilterToolbar() {
@@ -21,10 +21,8 @@ export function FilterToolbar() {
     selectedCollection,
     searchQuery,
     setSelectedEffectId,
+    clearAllFilters,
   } = useEffectsStore();
-
-  const [showTags, setShowTags] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const tagCounts = useMemo(() => getTagCounts(), []);
 
@@ -36,7 +34,10 @@ export function FilterToolbar() {
       filtered = filtered.filter((e) => e.category === selectedCategory);
     }
 
-    if (selectedCollection) {
+    if (selectedCollection === 'favorites') {
+      const favs = useEffectsStore.getState().favorites;
+      filtered = filtered.filter((e) => favs.includes(e.id));
+    } else if (selectedCollection) {
       const col = collections.find((c) => c.id === selectedCollection);
       if (col) {
         filtered = filtered.filter((e) => col.effectIds.includes(e.id));
@@ -67,11 +68,13 @@ export function FilterToolbar() {
     return filtered.length;
   }, [selectedCategory, selectedCollection, selectedDifficulty, selectedTags, searchQuery]);
 
-  const difficulties: { value: Difficulty | 'all'; label: string; emoji: string }[] = [
-    { value: 'all', label: 'All Levels', emoji: '' },
-    { value: 'beginner', label: 'Beginner', emoji: '🟢' },
-    { value: 'intermediate', label: 'Intermediate', emoji: '🟡' },
-    { value: 'advanced', label: 'Advanced', emoji: '🔴' },
+  const hasActiveFilters = selectedCategory !== 'all' || selectedDifficulty !== 'all' || selectedTags.length > 0 || selectedCollection !== null || searchQuery.trim() !== '';
+
+  const difficulties: { value: Difficulty | 'all'; label: string; emoji: string; glowColor: string }[] = [
+    { value: 'all', label: 'All Levels', emoji: '', glowColor: '' },
+    { value: 'beginner', label: 'Beginner', emoji: '🟢', glowColor: 'rgba(16,185,129,0.3)' },
+    { value: 'intermediate', label: 'Intermediate', emoji: '🟡', glowColor: 'rgba(234,179,8,0.3)' },
+    { value: 'advanced', label: 'Advanced', emoji: '🔴', glowColor: 'rgba(239,68,68,0.3)' },
   ];
 
   const handleSurprise = () => {
@@ -85,6 +88,49 @@ export function FilterToolbar() {
     }
   };
 
+  // Active filter chips data
+  const activeFilters: { label: string; onClear: () => void }[] = [];
+  if (selectedCategory !== 'all') {
+    activeFilters.push({
+      label: `Category: ${selectedCategory}`,
+      onClear: () => useEffectsStore.getState().setSelectedCategory('all'),
+    });
+  }
+  if (selectedCollection) {
+    if (selectedCollection === 'favorites') {
+      activeFilters.push({
+        label: 'Favorites',
+        onClear: () => useEffectsStore.getState().setSelectedCollection(null),
+      });
+    } else {
+      const col = collections.find((c) => c.id === selectedCollection);
+      if (col) {
+        activeFilters.push({
+          label: `Collection: ${col.name}`,
+          onClear: () => useEffectsStore.getState().setSelectedCollection(null),
+        });
+      }
+    }
+  }
+  if (selectedDifficulty !== 'all') {
+    activeFilters.push({
+      label: `Difficulty: ${selectedDifficulty}`,
+      onClear: () => setSelectedDifficulty('all'),
+    });
+  }
+  selectedTags.forEach((tag) => {
+    activeFilters.push({
+      label: `Tag: ${tag}`,
+      onClear: () => toggleTag(tag),
+    });
+  });
+  if (searchQuery.trim()) {
+    activeFilters.push({
+      label: `Search: "${searchQuery}"`,
+      onClear: () => useEffectsStore.getState().setSearchQuery(''),
+    });
+  }
+
   return (
     <div className="space-y-3">
       {/* Top toolbar */}
@@ -94,6 +140,16 @@ export function FilterToolbar() {
         </span>
 
         <div className="flex-1" />
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/20 transition-all"
+          >
+            <X className="w-3 h-3" />
+            Clear all
+          </button>
+        )}
 
         <button
           onClick={handleSurprise}
@@ -141,15 +197,38 @@ export function FilterToolbar() {
         </div>
 
         <button
-          onClick={() => setShowShortcuts(!showShortcuts)}
           className="p-1.5 text-gray-600 hover:text-gray-400 transition-colors"
-          title="Keyboard shortcuts"
+          title="Keyboard shortcuts: / to search, Esc to close"
         >
           <Keyboard className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Difficulty filter */}
+      {/* Active filter chips */}
+      <AnimatePresence>
+        {activeFilters.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-wrap gap-1.5 overflow-hidden"
+          >
+            {activeFilters.map((filter) => (
+              <button
+                key={filter.label}
+                onClick={filter.onClear}
+                className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[11px] text-emerald-400 hover:bg-emerald-500/20 transition-all"
+              >
+                {filter.label}
+                <X className="w-2.5 h-2.5" />
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Difficulty filter with glow */}
       <div className="flex flex-wrap gap-2">
         {difficulties.map((d) => (
           <button
@@ -160,6 +239,11 @@ export function FilterToolbar() {
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                 : 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
             }`}
+            style={
+              selectedDifficulty === d.value && d.glowColor
+                ? { boxShadow: `0 0 12px ${d.glowColor}` }
+                : undefined
+            }
           >
             {d.emoji && <span className="mr-1">{d.emoji}</span>}
             {d.label}
@@ -167,65 +251,24 @@ export function FilterToolbar() {
         ))}
       </div>
 
-      {/* Tags toggle and list */}
+      {/* Tags - shown by default */}
       <div>
-        <button
-          onClick={() => setShowTags(!showTags)}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors mb-2"
-        >
-          {showTags ? '▾' : '▸'} Tags ({tagCounts.length})
-        </button>
-        <AnimatePresence>
-          {showTags && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
+          {tagCounts.slice(0, 30).map(({ tag, count }) => (
+            <button
+              key={tag}
+              onClick={() => toggleTag(tag)}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                selectedTags.includes(tag)
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
+              }`}
             >
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
-                {tagCounts.slice(0, 30).map(({ tag, count }) => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
-                      selectedTags.includes(tag)
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
-                    }`}
-                  >
-                    {tag} <span className="text-gray-600">{count}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {tag} <span className="text-gray-600">{count}</span>
+            </button>
+          ))}
+        </div>
       </div>
-
-      {/* Keyboard shortcuts popup */}
-      <AnimatePresence>
-        {showShortcuts && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-[#111] border border-gray-800 rounded-xl p-4 text-xs"
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2">
-                <kbd className="px-1.5 py-0.5 bg-[#1a1a2e] border border-gray-700 rounded text-gray-400 font-mono">/</kbd>
-                <span className="text-gray-400">Focus search</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-1.5 py-0.5 bg-[#1a1a2e] border border-gray-700 rounded text-gray-400 font-mono">Esc</kbd>
-                <span className="text-gray-400">Close / Clear</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

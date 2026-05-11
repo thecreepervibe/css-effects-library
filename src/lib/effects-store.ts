@@ -17,6 +17,7 @@ interface EffectsStore {
   // Tag filter
   selectedTags: string[];
   toggleTag: (tag: string) => void;
+  clearAllFilters: () => void;
 
   // View mode
   viewMode: 'grid' | 'compact';
@@ -37,9 +38,49 @@ interface EffectsStore {
   // Collection filter
   selectedCollection: string | null;
   setSelectedCollection: (id: string | null) => void;
+
+  // Favorites
+  favorites: string[];
+  toggleFavorite: (id: string) => void;
+  isFavorite: (id: string) => boolean;
+
+  // Recently viewed
+  recentlyViewed: string[];
+  addRecentlyViewed: (id: string) => void;
+
+  // Compare mode
+  compareIds: string[];
+  toggleCompare: (id: string) => void;
+  isInCompare: (id: string) => boolean;
+  clearCompare: () => void;
+  compareModalOpen: boolean;
+  setCompareModalOpen: (open: boolean) => void;
+
+  // Filtered count for badge
+  filteredCount: number;
+  setFilteredCount: (count: number) => void;
 }
 
-export const useEffectsStore = create<EffectsStore>((set) => ({
+function loadFromLocalStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveToLocalStorage(key: string, value: unknown) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+export const useEffectsStore = create<EffectsStore>((set, get) => ({
   searchQuery: '',
   setSearchQuery: (query) => set({ searchQuery: query }),
 
@@ -57,6 +98,14 @@ export const useEffectsStore = create<EffectsStore>((set) => ({
         : [...state.selectedTags, tag],
     })),
 
+  clearAllFilters: () => set({
+    selectedCategory: 'all',
+    selectedDifficulty: 'all',
+    selectedTags: [],
+    selectedCollection: null,
+    searchQuery: '',
+  }),
+
   viewMode: 'grid',
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -64,11 +113,59 @@ export const useEffectsStore = create<EffectsStore>((set) => ({
   setCardSize: (size) => set({ cardSize: size }),
 
   selectedEffectId: null,
-  setSelectedEffectId: (id) => set({ selectedEffectId: id }),
+  setSelectedEffectId: (id) => {
+    set({ selectedEffectId: id });
+    if (id) {
+      get().addRecentlyViewed(id);
+    }
+  },
 
   sidebarOpen: false,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   selectedCollection: null,
-  setSelectedCollection: (id) => set({ selectedCollection: id, selectedCategory: 'all' }),
+  setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all' } : { selectedCollection: null }),
+
+  // Favorites
+  favorites: loadFromLocalStorage('css-effects-favorites', []),
+  toggleFavorite: (id) =>
+    set((state) => {
+      const newFavorites = state.favorites.includes(id)
+        ? state.favorites.filter((f) => f !== id)
+        : [...state.favorites, id];
+      saveToLocalStorage('css-effects-favorites', newFavorites);
+      return { favorites: newFavorites };
+    }),
+  isFavorite: (id) => get().favorites.includes(id),
+
+  // Recently viewed
+  recentlyViewed: loadFromLocalStorage('css-effects-recently-viewed', []),
+  addRecentlyViewed: (id) =>
+    set((state) => {
+      const filtered = state.recentlyViewed.filter((r) => r !== id);
+      const newRecent = [id, ...filtered].slice(0, 10);
+      saveToLocalStorage('css-effects-recently-viewed', newRecent);
+      return { recentlyViewed: newRecent };
+    }),
+
+  // Compare mode
+  compareIds: [],
+  toggleCompare: (id) =>
+    set((state) => {
+      if (state.compareIds.includes(id)) {
+        return { compareIds: state.compareIds.filter((c) => c !== id) };
+      }
+      if (state.compareIds.length >= 4) {
+        return { compareIds: [...state.compareIds.slice(1), id] };
+      }
+      return { compareIds: [...state.compareIds, id] };
+    }),
+  isInCompare: (id) => get().compareIds.includes(id),
+  clearCompare: () => set({ compareIds: [] }),
+  compareModalOpen: false,
+  setCompareModalOpen: (open) => set({ compareModalOpen: open }),
+
+  // Filtered count
+  filteredCount: 198,
+  setFilteredCount: (count) => set({ filteredCount: count }),
 }));

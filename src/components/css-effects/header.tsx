@@ -1,13 +1,70 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Search, Shuffle, Moon, Sun, Sparkles, Layers, Code2, Package } from 'lucide-react';
 import { useEffectsStore } from '@/lib/effects-store';
 import { effects } from '@/lib/effects-data';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Particle dot for the header background
+function HeaderParticles() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const particles: { x: number; y: number; vx: number; vy: number; size: number; opacity: number }[] = [];
+    const numParticles = 40;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < numParticles; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.3 + 0.1,
+      });
+    }
+
+    let animId: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(16, 185, 129, ${p.opacity})`;
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
+}
 
 export function Header() {
-  const { searchQuery, setSearchQuery, setSelectedEffectId } = useEffectsStore();
+  const { searchQuery, setSearchQuery, setSelectedEffectId, filteredCount } = useEffectsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -20,6 +77,8 @@ export function Header() {
     }
     return true;
   });
+
+  // Display filtered count directly with animation via AnimatePresence
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,17 +96,17 @@ export function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setSearchQuery, setSelectedEffectId]);
 
-  const handleRandom = () => {
+  const handleRandom = useCallback(() => {
     const randomEffect = effects[Math.floor(Math.random() * effects.length)];
     setSelectedEffectId(randomEffect.id);
-  };
+  }, [setSelectedEffectId]);
 
-  const handleToggleTheme = () => {
+  const handleToggleTheme = useCallback(() => {
     document.documentElement.classList.toggle('dark');
     const isNowDark = document.documentElement.classList.contains('dark');
     setIsDarkMode(isNowDark);
     localStorage.setItem('theme', isNowDark ? 'dark' : 'light');
-  };
+  }, []);
 
   const totalEffects = effects.length;
   const totalCategories = 38;
@@ -57,16 +116,36 @@ export function Header() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="text-center mb-6"
+      className="text-center mb-6 relative"
     >
-      {/* Badge - smaller and more subtle */}
-      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-full mb-3">
-        <Sparkles className="w-3 h-3 text-emerald-400/60" />
-        <span className="text-emerald-400/70 text-[10px] font-medium tracking-wider uppercase">CSS EFFECTS LAB</span>
+      {/* Particle background */}
+      <div className="absolute inset-0 overflow-hidden rounded-xl opacity-60">
+        <HeaderParticles />
+      </div>
+
+      {/* Badge with shimmer */}
+      <div className="relative inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-full mb-3 overflow-hidden">
+        <div className="absolute inset-0 shimmer-gradient" />
+        <Sparkles className="w-3 h-3 text-emerald-400/60 relative z-10" />
+        <span className="text-emerald-400/70 text-[10px] font-medium tracking-wider uppercase relative z-10">CSS EFFECTS LAB</span>
       </div>
 
       <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">
-        CSS <span className="text-emerald-400">Effects</span> Library
+        CSS{' '}
+        <span
+          className="gradient-text-animate"
+          style={{
+            background: 'linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981)',
+            backgroundSize: '300% 300%',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            animation: 'gradient-shift 4s ease infinite',
+          }}
+        >
+          Effects
+        </span>{' '}
+        Library
       </h1>
       <p className="text-gray-500 max-w-2xl mx-auto mb-5 text-sm">
         A curated collection of beautiful CSS effects with live preview &amp; ready-to-use code. Copy, paste, and create magic. ✨
@@ -101,13 +180,13 @@ export function Header() {
         </button>
       </div>
 
-      {/* Stats Row - more prominent with icons */}
+      {/* Stats Row with counter badge */}
       <div className="flex flex-wrap justify-center gap-4 md:gap-6">
         {[
-          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400' },
-          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400' },
-          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400' },
-          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400' },
+          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400', isCounter: false },
+          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400', isCounter: false },
+          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400', isCounter: false },
+          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400', isCounter: false },
         ].map((stat) => (
           <div key={stat.label} className="flex items-center gap-2 bg-[#111]/50 px-3 py-1.5 rounded-lg border border-gray-800/30">
             <stat.icon className={`w-3.5 h-3.5 ${stat.color} opacity-70`} />
@@ -115,6 +194,19 @@ export function Header() {
             <span className="text-gray-500 text-xs">{stat.label}</span>
           </div>
         ))}
+
+        {/* Animated counter badge showing filtered count */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={filteredCount}
+            initial={{ scale: 1.2, opacity: 0.5 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20"
+          >
+            <span className="text-emerald-400 font-bold text-sm">{filteredCount}</span>
+            <span className="text-emerald-400/70 text-xs">matching</span>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </motion.div>
   );

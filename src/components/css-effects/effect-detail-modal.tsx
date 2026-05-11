@@ -4,49 +4,48 @@ import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 // Simple syntax highlighting for CSS code
 function highlightCSS(code: string): string {
   return code
-    // Comments
     .replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6b7280">$1</span>')
-    // @keyframes, @media etc
     .replace(/(@[\w-]+)/g, '<span style="color:#c084fc">$1</span>')
-    // Selectors (lines ending with {)
     .replace(/^([.#:@][\w-]+)/gm, '<span style="color:#67e8f9">$1</span>')
-    // Property names
     .replace(/([\w-]+)(\s*:)/g, '<span style="color:#93c5fd">$1</span>$2')
-    // Values (numbers with units)
     .replace(/(\d+\.?\d*)(px|rem|em|%|deg|s|ms|fr|vh|vw)/g, '<span style="color:#fbbf24">$1$2</span>')
-    // Colors
     .replace(/(#[0-9a-fA-F]{3,8})/g, '<span style="color:#f472b6">$1</span>')
-    // Keywords
-    .replace(/\b(infinite|ease|linear|alternate|forwards|none|auto|transparent|solid|dashed|hidden|visible|relative|absolute|fixed|sticky|flex|grid|block|inline|center|space-between|column|row|wrap|nowrap|inherit|initial|unset|ease-in-out|ease-in|ease-out|step-end|normal|pointer|collapse|separate|cover|contain|scroll|no-repeat|center|border-box|content-box)\b/g, '<span style="color:#34d399">$1</span>');
+    .replace(/\b(infinite|ease|linear|alternate|forwards|none|auto|transparent|solid|dashed|hidden|visible|relative|absolute|fixed|sticky|flex|grid|block|inline|center|space-between|column|row|wrap|nowrap|inherit|initial|unset|ease-in-out|ease-in|ease-out|step-end|normal|pointer|collapse|separate|cover|contain|scroll|no-repeat|border-box|content-box)\b/g, '<span style="color:#34d399">$1</span>');
 }
 
-// Simple syntax highlighting for HTML code
 function highlightHTML(code: string): string {
   return code
-    // Tags
     .replace(/(&lt;|<)(\/?[\w-]+)/g, '$1<span style="color:#f472b6">$2</span>')
-    // Attributes
     .replace(/([\w-]+)(=)/g, '<span style="color:#93c5fd">$1</span>$2')
-    // Attribute values
     .replace(/(".*?")/g, '<span style="color:#fbbf24">$1</span>')
-    // Closing brackets
     .replace(/(\/?>)/g, '<span style="color:#6b7280">$1</span>');
 }
 
-export function EffectDetailModal() {
-  const { selectedEffectId, setSelectedEffectId } = useEffectsStore();
+function addLineNumbers(code: string): string {
+  const lines = code.split('\n');
+  const maxLineNum = lines.length.toString().length;
+  return lines
+    .map((line, i) => {
+      const num = (i + 1).toString().padStart(maxLineNum, ' ');
+      return `<span class="text-gray-600 select-none pr-4 border-r border-gray-800/50 mr-4 inline-block" style="min-width:${maxLineNum + 1}ch">${num}</span>${line}`;
+    })
+    .join('\n');
+}
+
+// Inner modal content - resets via key when effect changes
+function ModalContent({ effect }: { effect: CSSEffect }) {
+  const { setSelectedEffectId } = useEffectsStore();
   const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
-
-  const effect = effects.find((e) => e.id === selectedEffectId) || null;
 
   const injectPreview = useCallback(() => {
     if (!effect || !previewRef.current) return;
@@ -141,15 +140,17 @@ export function EffectDetailModal() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedEffectId) {
-        setSelectedEffectId(null);
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else {
+          setSelectedEffectId(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedEffectId, setSelectedEffectId]);
-
-  // Reset tab when effect changes - use key on the modal instead
+  }, [setSelectedEffectId, isFullscreen]);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -163,8 +164,6 @@ export function EffectDetailModal() {
     advanced: 'bg-red-500/15 text-red-400 border-red-500/20',
   };
 
-  if (!effect) return null;
-
   const tabConfig = [
     { id: 'preview' as const, label: 'Preview', icon: Eye },
     { id: 'css' as const, label: 'CSS', icon: Code2 },
@@ -172,42 +171,66 @@ export function EffectDetailModal() {
   ];
 
   return (
-    <AnimatePresence>
-      {selectedEffectId && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-            onClick={() => setSelectedEffectId(null)}
-          />
+    <>
+      {/* Backdrop with blur animation */}
+      <motion.div
+        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 bg-black/70 z-50"
+        onClick={() => setSelectedEffectId(null)}
+      />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-4 md:inset-8 lg:inset-16 bg-[#0f0f1a] border border-gray-800 rounded-2xl z-50 overflow-hidden flex flex-col"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
-              <div>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-lg font-bold text-white">{effect.name}</h2>
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
-                    {effect.difficulty}
+      {/* Modal with gradient border */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`fixed z-50 overflow-hidden flex flex-col ${
+          isFullscreen
+            ? 'inset-2'
+            : 'inset-4 md:inset-8 lg:inset-16'
+        }`}
+      >
+        {/* Gradient border wrapper */}
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            padding: '1.5px',
+            background: 'linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981)',
+            backgroundSize: '300% 300%',
+          }}
+        >
+          <div className="w-full h-full bg-[#0f0f1a] rounded-2xl" />
+        </div>
+
+        <div className="relative flex flex-col h-full bg-[#0f0f1a] rounded-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold text-white">{effect.name}</h2>
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
+                  {effect.difficulty}
+                </span>
+                {effect.isNew && (
+                  <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
+                    NEW
                   </span>
-                  {effect.isNew && (
-                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
-                      NEW
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{effect.description}</p>
+                )}
               </div>
+              <p className="text-xs text-gray-500 mt-1">{effect.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen preview'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
               <button
                 onClick={() => setSelectedEffectId(null)}
                 className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
@@ -215,88 +238,103 @@ export function EffectDetailModal() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+          </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-gray-800/50">
-              {tabConfig.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'text-emerald-400 border-b-2 border-emerald-400'
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-auto custom-scrollbar">
-              {activeTab === 'preview' && (
-                <div className="flex items-center justify-center min-h-[400px] p-10 bg-[#0a0a0a] relative">
-                  <div className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                      backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
-                      backgroundSize: '16px 16px',
-                    }}
-                  />
-                  <div ref={previewRef} className="relative z-10 transform scale-125" />
-                </div>
-              )}
-
-              {activeTab === 'css' && (
-                <div className="relative">
-                  <button
-                    onClick={() => handleCopy(effect.cssCode, 'css')}
-                    className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
-                  >
-                    {copied === 'css' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copied === 'css' ? 'Copied!' : 'Copy CSS'}
-                  </button>
-                  <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
-                    <code dangerouslySetInnerHTML={{ __html: highlightCSS(effect.cssCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')) }} />
-                  </pre>
-                </div>
-              )}
-
-              {activeTab === 'html' && (
-                <div className="relative">
-                  <button
-                    onClick={() => handleCopy(effect.htmlCode, 'html')}
-                    className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
-                  >
-                    {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copied === 'html' ? 'Copied!' : 'Copy HTML'}
-                  </button>
-                  <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
-                    <code dangerouslySetInnerHTML={{ __html: highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')) }} />
-                  </pre>
-                </div>
-              )}
-            </div>
-
-            {/* Tags footer */}
-            <div className="px-6 py-3 border-t border-gray-800/50 flex flex-wrap gap-2 items-center">
-              {effect.tags.map((tag) => (
-                <span key={tag} className="text-[11px] px-2 py-0.5 bg-[#1a1a2e] text-gray-500 rounded-full">
-                  {tag}
-                </span>
-              ))}
-              <div className="flex-1" />
+          {/* Tabs with icons */}
+          <div className="flex border-b border-gray-800/50">
+            {tabConfig.map((tab) => (
               <button
-                onClick={() => handleCopy(effect.cssCode + '\n\n' + effect.htmlCode, 'all')}
-                className="flex items-center gap-1.5 px-5 py-2 bg-emerald-500 text-black rounded-lg text-xs font-semibold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'text-emerald-400 border-b-2 border-emerald-400'
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
               >
-                {copied === 'all' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied === 'all' ? 'Copied!' : 'Copy All Code'}
+                <tab.icon className="w-3.5 h-3.5" />
+                {tab.label}
               </button>
-            </div>
-          </motion.div>
-        </>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-auto custom-scrollbar">
+            {activeTab === 'preview' && (
+              <div className={`flex items-center justify-center p-10 bg-[#0a0a0a] relative ${
+                isFullscreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[400px]'
+              }`}>
+                <div className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+                    backgroundSize: '16px 16px',
+                  }}
+                />
+                <div ref={previewRef} className="relative z-10 transform scale-125" />
+              </div>
+            )}
+
+            {activeTab === 'css' && (
+              <div className="relative">
+                <button
+                  onClick={() => handleCopy(effect.cssCode, 'css')}
+                  className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
+                >
+                  {copied === 'css' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied === 'css' ? 'Copied!' : 'Copy CSS'}
+                </button>
+                <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
+                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightCSS(effect.cssCode.replace(/</g, '&lt;').replace(/>/g, '&gt;'))) }} />
+                </pre>
+              </div>
+            )}
+
+            {activeTab === 'html' && (
+              <div className="relative">
+                <button
+                  onClick={() => handleCopy(effect.htmlCode, 'html')}
+                  className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
+                >
+                  {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                  {copied === 'html' ? 'Copied!' : 'Copy HTML'}
+                </button>
+                <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
+                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;'))) }} />
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* Tags footer */}
+          <div className="px-6 py-3 border-t border-gray-800/50 flex flex-wrap gap-2 items-center">
+            {effect.tags.map((tag) => (
+              <span key={tag} className="text-[11px] px-2 py-0.5 bg-[#1a1a2e] text-gray-500 rounded-full">
+                {tag}
+              </span>
+            ))}
+            <div className="flex-1" />
+            <button
+              onClick={() => handleCopy(effect.cssCode + '\n\n' + effect.htmlCode, 'all')}
+              className="flex items-center gap-1.5 px-5 py-2 bg-emerald-500 text-black rounded-lg text-xs font-semibold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+            >
+              {copied === 'all' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied === 'all' ? 'Copied!' : 'Copy All Code'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+export function EffectDetailModal() {
+  const { selectedEffectId } = useEffectsStore();
+  const effect = effects.find((e) => e.id === selectedEffectId) || null;
+
+  return (
+    <AnimatePresence>
+      {selectedEffectId && effect && (
+        <ModalContent key={effect.id} effect={effect} />
       )}
     </AnimatePresence>
   );
