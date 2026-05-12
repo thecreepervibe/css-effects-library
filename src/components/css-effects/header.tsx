@@ -291,7 +291,7 @@ export function Header() {
   const typingPhrases = useMemo(() => [
     'A curated collection of beautiful CSS effects',
     'Copy, paste, and create magic',
-    '198 pure CSS effects ready to use',
+    '1000+ pure CSS effects ready to use',
   ], []);
 
   // Keyboard shortcut: Ctrl+K / Cmd+K to focus search

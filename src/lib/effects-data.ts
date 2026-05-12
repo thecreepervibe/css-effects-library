@@ -1,3 +1,20 @@
+import { effectsButtonsBatch } from './effects-buttons-batch';
+import { effectsTextBatch } from './effects-text-batch';
+import { effectsLoadingBatch } from './effects-loading-batch';
+import { effectsCardsBgBatch } from './effects-cards-bg-batch';
+import { effectsHoverBordersBatch } from './effects-hover-borders-batch';
+import { effectsShadowsInputsToggles } from './effects-shadows-inputs-toggles';
+import { effectsTooltipsTransitions } from './effects-tooltips-transitions';
+import { effectsProgressNotifs } from './effects-progress-notifs';
+import { effectsRemaining1a } from './effects-remaining-1a';
+import { effectsRemaining1b } from './effects-remaining-1b';
+import { effectsRemaining1c } from './effects-remaining-1c';
+import { effectsNewBatch1 } from './effects-new-batch-1';
+import { effectsNewBatch2 } from './effects-new-batch-2';
+import { effectsNewBatch3 } from './effects-new-batch-3';
+import { effectsNewBatch4 } from './effects-new-batch-4';
+import { effectsNewBatch5 } from './effects-new-batch-5';
+
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
 export interface CSSEffect {
@@ -5610,7 +5627,30 @@ export const effects: CSSEffect[] = [
 
 ];
 
-// Compute categories with dynamic counts from effects
+// Merge all batch effects with the base effects
+const allBatchEffects: CSSEffect[] = [
+  ...effectsButtonsBatch,
+  ...effectsTextBatch,
+  ...effectsLoadingBatch,
+  ...effectsCardsBgBatch,
+  ...effectsHoverBordersBatch,
+  ...effectsShadowsInputsToggles,
+  ...effectsTooltipsTransitions,
+  ...effectsProgressNotifs,
+  ...effectsRemaining1a,
+  ...effectsRemaining1b,
+  ...effectsRemaining1c,
+  ...effectsNewBatch1,
+  ...effectsNewBatch2,
+  ...effectsNewBatch3,
+  ...effectsNewBatch4,
+  ...effectsNewBatch5,
+];
+
+// Push batch effects into the existing exported array so all references stay valid
+allBatchEffects.forEach(e => effects.push(e));
+
+// Compute categories with dynamic counts from all effects
 export const categories: Category[] = categoryDefs.map(def => ({
   ...def,
   count: def.id === 'all' ? effects.length : effects.filter(e => e.category === def.id).length,

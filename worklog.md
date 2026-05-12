@@ -544,3 +544,175 @@ Notifications: slide, entrance, fade, simple, bounce, playful, flip, 3d, scale, 
 - All specified IDs present and matching specification
 - File exports `effectsProgressNotifs` array of type `CSSEffect[]`
 - Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 3a
+Agent: general-purpose
+Task: Generate 40 CSS effects (avatars + navigation)
+
+Work Log:
+- Created `/home/z/my-project/src/lib/effects-new-batch-1.ts` with exactly 40 effects
+- 20 avatar effects + 20 navigation effects
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 40 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Avatar Effect IDs (20 total)
+avatar-glow-ring, avatar-stack, avatar-pulse, avatar-border-animation, avatar-status-dot, avatar-flip, avatar-morph, avatar-rotate, avatar-bounce, avatar-gradient-border, avatar-neon-ring, avatar-double-ring, avatar-shimmer, avatar-scale-hover, avatar-tilt-3d, avatar-float, avatar-swap, avatar-dashed-border, avatar-shadow-lift, avatar-glass
+
+## Navigation Effect IDs (20 total)
+nav-slide-down, nav-underline-active, hamburger-morph, breadcrumb-arrow, dropdown-fade, nav-pill-active, nav-indicator-slide, nav-glass, nav-reveal-scroll, nav-sidebar-slide, nav-tabs-glow, nav-step-progress, nav-accordion, nav-mega-menu, nav-breadcrumb-chevron, nav-dot-indicator, nav-vertical-tabs, nav-animated-border, nav-icon-menu, nav-responsive-collapse
+
+## Difficulty Distribution
+- Avatars: beginner 8, intermediate 10, advanced 2
+- Navigation: beginner 6, intermediate 9, advanced 5
+
+Stage Summary:
+- 40 new effects across avatars and navigation categories
+- `bun run lint` passes with 0 errors, 0 warnings
+
+---
+Task ID: 3b
+Agent: general-purpose
+Task: Generate 40 CSS effects (image, pricing, timelines, accordions)
+
+Work Log:
+- Created `/home/z/my-project/src/lib/effects-new-batch-2.ts` with exactly 40 effects
+- 10 image effects + 10 pricing effects + 10 timelines effects + 10 accordions effects
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 40 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Image Effect IDs (10 total)
+image-grayscale-hover, image-zoom-pan, image-overlay-slide, image-blur-reveal, image-corner-fold, image-compare-slider, image-stack, image-mosaic, image-spotlight, image-tilt-shift
+
+## Pricing Effect IDs (10 total)
+price-tag-ribbon, discount-badge-pulse, plan-card-popular, price-slash-animation, coupon-clip, price-countdown, plan-comparison-highlight, sale-stamp, price-gradient, bundle-badge
+
+## Timelines Effect IDs (10 total)
+timeline-line-grow, step-dot-pulse, progress-connector, timeline-zigzag, milestone-marker, timeline-card-reveal, step-checkmark, timeline-gradient, vertical-timeline, horizontal-stepper
+
+## Accordions Effect IDs (10 total)
+accordion-arrow-rotate, accordion-plus-minus, accordion-slide, accordion-fade, accordion-border-highlight, accordion-nested, accordion-icon-bounce, accordion-stretch, accordion-color-shift, accordion-glass
+
+## Difficulty Distribution
+- Image: beginner 2, intermediate 6, advanced 2
+- Pricing: beginner 3, intermediate 6, advanced 1
+- Timelines: beginner 3, intermediate 5, advanced 2
+- Accordions: beginner 3, intermediate 5, advanced 2
+
+Stage Summary:
+- 40 new effects across image, pricing, timelines, accordions categories
+- `bun run lint` passes with 0 errors, 0 warnings
+
+---
+Task ID: 3c
+Agent: general-purpose
+Task: Generate 40 CSS effects (social, forms, data, sliders)
+
+Work Log:
+- Created `/home/z/my-project/src/lib/effects-new-batch-3.ts` with exactly 40 effects
+- 10 social effects + 10 forms effects + 10 data effects + 10 sliders effects
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 40 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Social Effect IDs (10 total)
+social-share-button, like-heart-animation, twitter-bird, facebook-fade, instagram-gradient, linkedin-pulse, share-expand, follow-button, social-counter, social-proof-popup
+
+## Forms Effect IDs (10 total)
+form-shake-validation, radio-custom-circle, checkbox-tick, file-upload-drag, select-dropdown-custom, textarea-auto-grow, form-step-wizard, form-success-check, form-error-shake, password-strength-meter
+
+## Data Effect IDs (10 total)
+mini-bar-chart, stat-counter-up, comparison-bar, data-table-row-hover, donut-chart-css, progress-ring-data, heat-map-cell, sparkline, ranking-number, metric-card
+
+## Sliders Effect IDs (10 total)
+range-custom-thumb, toggle-ios-slider, volume-slider, brightness-slider, color-hue-slider, speed-slider, temperature-slider, double-range-slider, vertical-slider, slider-tooltip-value
+
+## Difficulty Distribution
+- Social: beginner 3, intermediate 6, advanced 1
+- Forms: beginner 5, intermediate 5, advanced 0
+- Data: beginner 3, intermediate 5, advanced 2
+- Sliders: beginner 1, intermediate 7, advanced 2
+
+Stage Summary:
+- 40 new effects across social, forms, data, sliders categories
+- `bun run lint` passes with 0 errors, 0 warnings
+
+---
+Task ID: 3d
+Agent: general-purpose
+Task: Generate 40 CSS effects (scroll, layout, decorative, print)
+
+Work Log:
+- Created `/home/z/my-project/src/lib/effects-new-batch-4.ts` with exactly 40 effects
+- 10 scroll effects + 10 layout effects + 10 decorative effects + 10 print effects
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 40 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Scroll Effect IDs (10 total)
+scroll-fade-in, scroll-slide-left, scroll-scale-up, scroll-rotate-reveal, scroll-parallax-layer, scroll-sticky-header, scroll-indicator-dot, scroll-horizontal, scroll-snap-card, scroll-morph
+
+## Layout Effect IDs (10 total)
+grid-auto-fit, masonry-hint, holy-grail-layout, sidebar-collapse, centered-flex-card, split-screen, overlap-cards, responsive-stack, layout-shift-animation, container-aspect-ratio
+
+## Decorative Effect IDs (10 total)
+ribbon-corner, divider-wave, ornament-dot, decorative-bracket, corner-flourish, section-separator, dot-leader, scroll-ornament, vine-border, star-burst
+
+## Print Effect IDs (10 total)
+drop-cap, pull-quote, column-text, hanging-punctuation, page-break-line, footnote-marker, book-spine, typography-grid, editorial-layout, text-column-rule
+
+## Difficulty Distribution
+- Scroll: beginner 4, intermediate 4, advanced 2
+- Layout: beginner 5, intermediate 5, advanced 0
+- Decorative: beginner 3, intermediate 6, advanced 1
+- Print: beginner 5, intermediate 3, advanced 2
+
+Stage Summary:
+- 40 new effects across scroll, layout, decorative, print categories
+- `bun run lint` passes with 0 errors, 0 warnings
+
+---
+Task ID: 3e
+Agent: general-purpose
+Task: Generate 40 CSS effects (game-ui, weather, ecommerce, easter)
+
+Work Log:
+- Created `/home/z/my-project/src/lib/effects-new-batch-5.ts` with exactly 40 effects
+- 10 game-ui effects + 10 weather effects + 10 ecommerce effects + 10 easter effects
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 40 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Game UI Effect IDs (10 total)
+game-health-bar-decrease, game-mana-bar, game-xp-progress, game-achievement-badge, game-score-counter, game-combo-multiplier, game-loot-rarity-border, game-quest-tracker, game-skill-cooldown, game-damage-number-float
+
+## Weather Effect IDs (10 total)
+weather-rain-drops, weather-snow-fall, weather-sun-rays, weather-cloud-float, weather-lightning-flash, weather-fog-drift, weather-wind-lines, weather-rainbow-arc, weather-moon-phases, weather-star-twinkle-sky
+
+## Ecommerce Effect IDs (10 total)
+ecom-product-card-hover, ecom-cart-badge-count, ecom-sale-tag, ecom-out-of-stock-overlay, ecom-quick-view-button, ecom-wishlist-heart, ecom-rating-stars, ecom-size-selector, ecom-color-swatch-picker, ecom-quantity-spinner
+
+## Easter Effect IDs (10 total)
+easter-confetti-burst, easter-party-popper, easter-secret-knock, easter-matrix-rain, easter-rickroll-border, easter-glitch-screen, easter-disco-mode, easter-fireworks-sparkle, easter-slot-machine-spin, easter-egg-hidden
+
+## Difficulty Distribution
+- Game UI: beginner 3, intermediate 5, advanced 2
+- Weather: beginner 2, intermediate 7, advanced 1
+- Ecommerce: beginner 8, intermediate 2, advanced 0
+- Easter: beginner 1, intermediate 6, advanced 3
+
+Stage Summary:
+- 40 new effects across game-ui, weather, ecommerce, easter categories
+- `bun run lint` passes with 0 errors, 0 warnings
