@@ -425,7 +425,7 @@ export const effectsNewBatch4: CSSEffect[] = [
 }
 .scroll-snap-card:last-child { border-bottom: none; }
 .scroll-snap-num {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #10b98120;
 }
@@ -1227,7 +1227,7 @@ export const effectsNewBatch4: CSSEffect[] = [
 }
 .decorative-bracket-left,
 .decorative-bracket-right {
-  font-size: 3rem;
+  font-size: 1.8rem;
   font-weight: 200;
   color: #10b98144;
   line-height: 1;
@@ -1647,7 +1647,7 @@ export const effectsNewBatch4: CSSEffect[] = [
   position: absolute;
   top: 4px;
   left: 12px;
-  font-size: 3rem;
+  font-size: 1.8rem;
   color: #10b98130;
   font-family: Georgia, serif;
   line-height: 1;

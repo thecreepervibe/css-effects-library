@@ -940,7 +940,7 @@ export const effectsNewBatch9: CSSEffect[] = [
 }
 .input-pw-toggle-btn:hover { color: #10b981; }
 .input-pw-toggle::-ms-reveal { display: none; }`,
-    htmlCode: `<div class="input-pw-toggle-wrap"><input class="input-pw-toggle" type="password" placeholder="Password" /><button class="input-pw-toggle-btn" onclick="const i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🔒'">👁</button></div>`,
+    htmlCode: `<div class="input-pw-toggle-wrap"><input class="input-pw-toggle" type="text" placeholder="Password" readonly value="••••••••" /><span class="input-pw-toggle-btn">👁</span></div>`,
     isNew: true,
   },
   {

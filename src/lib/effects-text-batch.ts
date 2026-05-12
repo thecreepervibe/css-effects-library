@@ -73,7 +73,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text with a glitch distortion effect using clip-path',
     cssCode: `.glitch-text-2 {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: bold;
   color: #fff;
   position: relative;
@@ -226,7 +226,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text outline that draws itself using stroke-dasharray',
     cssCode: `.text-stroke-anim {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: transparent;
   -webkit-text-stroke: 2px #10b981;
@@ -257,7 +257,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text that fills with a gradient from bottom to top',
     cssCode: `.text-fill-anim {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   background: linear-gradient(to top, #10b981 50%, transparent 50%);
   background-size: 100% 200%;
@@ -281,7 +281,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text with a liquid wobble distortion effect',
     cssCode: `.liquid-text {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #3b82f6;
   animation: liquid 3s ease-in-out infinite;
@@ -304,7 +304,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Neon glowing text with a flicker effect',
     cssCode: `.neon-flicker {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: bold;
   color: #fff;
   text-shadow:
@@ -340,7 +340,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'beginner',
     description: 'Text with animated shadow creating a 3D depth effect',
     cssCode: `.text-shadow-anim {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #f59e0b;
   animation: shadow-shift 2s ease-in-out infinite;
@@ -418,7 +418,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Retro vintage style text with layered shadows',
     cssCode: `.retro-text {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #fbbf24;
   text-shadow:
@@ -468,7 +468,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text revealed through an expanding circular mask',
     cssCode: `.text-reveal-mask {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #fff;
   clip-path: circle(0% at 50% 50%);
@@ -581,7 +581,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text with a sliding gradient background',
     cssCode: `.text-gradient-slide {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6, #10b981);
   background-size: 300% 100%;
@@ -882,7 +882,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text revealed with a horizontal wipe effect',
     cssCode: `.text-wipe {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #fff;
   position: relative;
@@ -945,7 +945,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text that fills with color from bottom to top like water',
     cssCode: `.text-fill-up {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   position: relative;
   display: inline-block;
@@ -977,7 +977,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text sliced horizontally with offset animation',
     cssCode: `.text-slice {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   position: relative;
   color: #ef4444;
@@ -1055,7 +1055,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'A spotlight that moves across the text',
     cssCode: `.text-spotlight {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #334155;
   position: relative;
@@ -1111,7 +1111,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text with a fiery gradient and flicker effect',
     cssCode: `.text-fire {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   background: linear-gradient(to top, #f97316, #ef4444, #fbbf24);
   -webkit-background-clip: text;
@@ -1152,7 +1152,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text with a frosty icy appearance',
     cssCode: `.text-ice {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   background: linear-gradient(180deg, #e0f2fe, #7dd3fc, #0ea5e9, #0369a1);
   -webkit-background-clip: text;
@@ -1178,7 +1178,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text with a metallic chrome appearance',
     cssCode: `.text-metal {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 25%, #e2e8f0 50%, #64748b 75%, #e2e8f0 100%);
   -webkit-background-clip: text;
@@ -1199,7 +1199,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text with an electric lightning effect',
     cssCode: `.text-electric {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #38bdf8;
   text-shadow:
@@ -1228,7 +1228,7 @@ export const effectsTextBatch: CSSEffect[] = [
     difficulty: 'advanced',
     description: 'Text with a horizontal slice glitch effect',
     cssCode: `.text-glitch-3 {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #fff;
   position: relative;

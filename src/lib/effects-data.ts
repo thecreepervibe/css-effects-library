@@ -186,19 +186,18 @@ export const effects: CSSEffect[] = [
     description: 'Text that types itself out character by character',
     cssCode: `.typewriter {
   font-family: monospace;
-  font-size: 1.2rem;
+  font-size: 0.8rem;
   color: #10b981;
   overflow: hidden;
   border-right: 2px solid #10b981;
   white-space: nowrap;
   animation: typing 3s steps(20) infinite, blink-caret 0.75s step-end infinite;
-  width: 0;
+  max-width: fit-content;
 }
 @keyframes typing {
-  0% { width: 0; }
-  50% { width: 100%; }
-  80% { width: 100%; }
-  100% { width: 0; }
+  0%, 5% { max-width: 0; }
+  50%, 80% { max-width: 100%; }
+  95%, 100% { max-width: 0; }
 }
 @keyframes blink-caret {
   from, to { border-color: transparent; }
@@ -215,7 +214,7 @@ export const effects: CSSEffect[] = [
     difficulty: 'beginner',
     description: 'Text with a stunning 3D extrusion effect',
     cssCode: `.text-3d {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 900;
   color: #10b981;
   text-shadow:
@@ -237,7 +236,7 @@ export const effects: CSSEffect[] = [
     difficulty: 'intermediate',
     description: 'Text split into two distinct colors diagonally',
     cssCode: `.split-text {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 900;
   position: relative;
   background: linear-gradient(135deg, #10b981 50%, #6366f1 50%);
@@ -256,7 +255,7 @@ export const effects: CSSEffect[] = [
     difficulty: 'beginner',
     description: 'Text with only an outline, no fill',
     cssCode: `.outline-text {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 900;
   color: transparent;
   -webkit-text-stroke: 2px #10b981;

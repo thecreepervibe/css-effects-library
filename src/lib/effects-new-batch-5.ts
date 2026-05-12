@@ -268,7 +268,7 @@ export const effectsNewBatch5: CSSEffect[] = [
 }
 .score-counter-value {
   color: #10b981;
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   animation: score-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -343,7 +343,7 @@ export const effectsNewBatch5: CSSEffect[] = [
 }
 .combo-value {
   color: #10b981;
-  font-size: 3rem;
+  font-size: 1.8rem;
   font-weight: 900;
   position: relative;
   animation: combo-scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1869,7 +1869,7 @@ export const effectsNewBatch5: CSSEffect[] = [
   justify-content: center;
 }
 .popper-icon {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   animation: popper-shake 0.5s ease-in-out infinite;
   z-index: 2;
   position: relative;

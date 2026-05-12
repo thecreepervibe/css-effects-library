@@ -550,7 +550,7 @@ export const effectsNewBatch7: CSSEffect[] = [
 .text-clip-text {
   position: relative;
   z-index: 1;
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   -webkit-background-clip: text;
   background-clip: text;
@@ -1705,7 +1705,7 @@ export const effectsNewBatch7: CSSEffect[] = [
   justify-content: center;
 }
 .text-chrome {
-  font-size: 2.6rem;
+  font-size: 1.6rem;
   font-weight: 900;
   letter-spacing: 5px;
   background: linear-gradient(

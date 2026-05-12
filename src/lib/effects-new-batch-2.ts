@@ -858,7 +858,7 @@ export const effectsNewBatch2: CSSEffect[] = [
   font-weight: 700;
 }
 .price-gradient-amount {
-  font-size: 2.8rem;
+  font-size: 1.7rem;
   font-weight: 900;
   background: linear-gradient(135deg, #10b981, #3b82f6, #8b5cf6);
   -webkit-background-clip: text;

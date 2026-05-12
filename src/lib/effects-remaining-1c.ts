@@ -1093,7 +1093,7 @@ export const effectsRemaining1c: CSSEffect[] = [
   border: 1px solid #2a2a3e;
 }
 .counter-anim .number {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
   color: #10b981;
   line-height: 1;
