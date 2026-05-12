@@ -723,7 +723,7 @@ export default function HomePage() {
       <ScrollProgress />
 
       {/* Top section: Header with glass morphism */}
-      <header className={`w-full border-b sticky top-0 z-30 glass ${isDark ? 'border-gray-800/30' : 'border-gray-200/60'}`}>
+      <header className={`w-full border-b z-30 glass ${isDark ? 'border-gray-800/30' : 'border-gray-200/60'}`}>
         {/* Animated gradient border under header */}
         <div className="header-animated-border" />
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6">
