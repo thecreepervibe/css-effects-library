@@ -251,8 +251,8 @@ function ColorPaletteTab({ effect, isDark, copied, setCopied }: {
   return (
     <div className={`${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
       {/* Mini preview at top */}
-      <div className={`flex items-center justify-center p-6 border-b relative ${isDark ? 'border-gray-800/30' : 'border-gray-200'}`}>
-        <div ref={previewRef} className="relative z-10 transform scale-110" />
+      <div className={`flex items-center justify-center p-6 border-b relative min-h-[120px] ${isDark ? 'border-gray-800/30' : 'border-gray-200'}`}>
+        <div ref={previewRef} className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden" />
       </div>
 
       <div className="p-6">
@@ -1085,7 +1085,7 @@ ${effect.cssCode}
                     backgroundSize: '16px 16px',
                   }}
                 />
-                <div ref={previewRef} className="relative z-10 transform scale-125" />
+                <div ref={previewRef} className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden" />
               </div>
             )}
 

@@ -486,7 +486,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
           {/* Preview content with scale animation */}
           <div
             ref={previewRef}
-            className="relative z-10 flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-400 pointer-events-none"
+            className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden scale-90 group-hover:scale-100 transition-transform duration-400 pointer-events-none"
           />
 
           {/* Gradient overlay at bottom of preview for text readability */}
@@ -785,7 +785,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
                         el.innerHTML = previewRef.current.innerHTML;
                       }
                     }}
-                    className="relative z-10 flex items-center justify-center scale-110 pointer-events-none"
+                    className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden scale-110 pointer-events-none"
                   />
                 </div>
                 {/* CSS code preview */}

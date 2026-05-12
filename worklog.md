@@ -223,3 +223,67 @@ Task: Assess project status, perform QA testing, improve styling, add new featur
 - Add code comparison diff view in playground
 - Add effect versioning/history in playground
 - Add custom color theme picker for the entire site
+
+---
+Task ID: 13
+Agent: Main Agent (Bug Fix - Background Previews)
+
+Task: Fix background effect previews not working
+
+## Current Project Status
+- CSS Effects Library website running on port 3000
+- 198 effects across 38 categories with live previews
+- Site is stable, lint passes cleanly
+
+## Bug Fix: Background Effect Previews Not Rendering
+**Root Cause**: Background effects (Aurora, Gradient Mesh, Animated Stripes, Dot Pattern, Floating Particles) use `width: 100%; height: 100%` in their CSS, which requires a parent with explicit dimensions. The preview containers (`previewRef`) used `relative` positioning without explicit width/height, so the background divs collapsed to 0px.
+
+**Fix**: Changed `previewRef` containers from `relative` to `absolute inset-0` positioning in 4 locations:
+1. `effect-card.tsx` - Grid view preview div
+2. `effect-card.tsx` - Expanded preview div (quick preview)
+3. `effect-detail-modal.tsx` - Modal preview tab
+4. `effect-detail-modal.tsx` - ColorPaletteTab preview
+
+Also added `overflow-hidden` and `flex items-center justify-center` to keep non-background effects centered.
+
+## Verification
+- Aurora Background now renders at 228px × 140px with working `::before` pseudo-element
+- All 5 background effects render correctly with proper backgrounds
+- Non-background effects (buttons, text, cards) still centered properly
+- Lint passes: 0 errors, 0 warnings
+- No console errors
+- Agent-browser QA confirms fix
+
+## Unresolved Issues/Risks
+- Hydration mismatch possible with localStorage-based state on SSR (cosmetic)
+- Some CSS effect previews might not render perfectly in very small card areas
+
+---
+Task ID: 1
+Agent: general-purpose
+Task: Fix background effect previews not working
+
+## Root Cause
+Background effects (aurora, gradients, etc.) use CSS `width: 100%; height: 100%` which requires a parent with explicit dimensions. The preview containers used `relative` positioning with `flex items-center justify-center`, but without explicit parent dimensions, divs with no intrinsic content collapsed to 0 height.
+
+## Changes Made
+
+### 1. effect-card.tsx — Grid view preview (line ~488)
+- Changed `relative` → `absolute inset-0` and added `overflow-hidden`
+- Preview div now fills the entire preview area, giving background effects a proper container to expand into
+- `flex items-center justify-center` retained for centering non-background effects (buttons, spinners)
+
+### 2. effect-card.tsx — Expanded preview (line ~788)
+- Same change: `relative` → `absolute inset-0` + `overflow-hidden`
+- Expanded preview area now properly renders background effects
+
+### 3. effect-detail-modal.tsx — Modal preview tab (line 1088)
+- Changed `relative z-10 transform scale-125` → `absolute inset-0 z-10 flex items-center justify-center overflow-hidden`
+- Modal preview now fills the entire preview container for background effects
+
+### 4. effect-detail-modal.tsx — ColorPaletteTab preview (line 255)
+- Changed `relative z-10 transform scale-110` → `absolute inset-0 z-10 flex items-center justify-center overflow-hidden`
+- Added `min-h-[120px]` to the parent container to prevent collapse (parent had no in-flow content after child became absolute)
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
