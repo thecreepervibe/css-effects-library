@@ -287,3 +287,260 @@ Background effects (aurora, gradients, etc.) use CSS `width: 100%; height: 100%`
 
 ## Verification
 - `bun run lint` passes with 0 errors, 0 warnings
+
+---
+Task ID: 2-a-buttons
+Agent: general-purpose
+Task: Generate CSS Button Effects (50 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-buttons-batch.ts` with exactly 50 button effects
+- All effects have category `buttons`, `isNew: true`
+- Each effect has real, working CSS code producing visible button effects
+- CSS kept under 50 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Buttons styled to look good on dark backgrounds (emerald accent #10b981, dark backgrounds #1a1a2e/#0f0f1a)
+
+## Effect IDs (50 total)
+magnetic-button, liquid-button, gradient-sweep-btn, border-draw-btn, fill-up-btn, shine-btn-2, flip-3d-btn, slide-bg-btn, pulse-glow-btn, icon-slide-btn, underline-grow-btn, shadow-lift-btn, ripple-btn-2, press-down-btn, bounce-btn, rotate-icon-btn, border-spin-btn, swipe-btn, fill-center-btn, outline-collapse-btn, double-border-btn, corner-draw-btn, neon-btn-2, glass-btn, gradient-border-btn, text-slide-btn, split-color-btn, liquid-fill-btn, morph-btn, expand-btn, shrink-btn, swing-btn, jelly-btn, elastic-btn, flip-btn, fold-btn, dissolve-btn, scatter-btn, orbit-btn, arrow-slide-btn, checkmark-btn, send-btn, download-btn, play-btn, refresh-btn, search-btn, menu-btn, close-btn, heart-btn, star-btn
+
+## Difficulty Distribution
+- beginner: 14 effects
+- intermediate: 27 effects
+- advanced: 9 effects
+
+## Tag Coverage
+hover, animated, icon, gradient, border, glow, pulse, ripple, 3d, flip, slide, fill, shine, magnetic, liquid, swipe, neon, glass, morph, jelly, elastic, swing, bounce, press, shrink, expand, fold, dissolve, scatter, orbit, arrow, checkmark, send, download, play, refresh, search, menu, close, heart, star, frosted, blur, wave, organic, confirmation, media, spin, like, favorite
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- File exports `effectsButtonsBatch` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-a-text
+Agent: general-purpose
+Task: Generate CSS Text Effects Batch (50 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-text-batch.ts` with exactly 50 text effects
+- All effects have category `text`, `isNew: true`
+- Each effect has real, working CSS code producing visible text effects
+- CSS kept under 50 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a) used where appropriate; emerald accent #10b981 featured prominently
+
+## Effect IDs (50 total)
+wave-text, bounce-text, glitch-text-2, blur-reveal-text, scramble-text, rotating-words, text-stroke-anim, text-fill-anim, liquid-text, neon-flicker, text-shadow-anim, text-highlight-sweep, text-color-cycle, retro-text, pixel-text, text-reveal-mask, text-vaporize, text-flip-in, text-zoom, text-marquee, text-gradient-slide, text-blur-in, text-scale-loop, text-shake, text-drop-in, text-swing, text-rubber-band, text-jello, text-fade-stagger, text-slide-left, text-slide-right, text-rotate-in, text-roll-in, text-wipe, text-expanding-outline, text-fill-up, text-slice, text-cascade, text-spotlight, text-smoke, text-fire, text-ice, text-metal, text-electric, text-glitch-3, text-split-rows, text-ripple, text-typewriter-2, text-bounce-letters, text-3d-rotate
+
+## Difficulty Distribution
+- beginner: 14 effects
+- intermediate: 25 effects
+- advanced: 11 effects
+
+## Tag Coverage
+animated, wave, bounce, glitch, distortion, blur, reveal, scramble, decode, rotate, words, stroke, outline, fill, gradient, liquid, wobble, neon, flicker, glow, shadow, 3d, highlight, sweep, color, cycle, rainbow, retro, vintage, pixel, mask, vaporize, dissolve, flip, entrance, zoom, scale, marquee, scroll, pulse, shake, vibrate, drop, fall, swing, pendulum, rubber, stretch, elastic, jello, fade, stagger, slide, left, right, roll, wipe, expand, water, cascade, spotlight, light, smoke, fire, flame, ice, frost, cold, metal, chrome, electric, lightning, split, rows, ripple, typewriter, typing, letters, perspective
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 50 effects confirmed by grep count
+- File exports `effectsTextBatch` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-a-loading
+Agent: general-purpose
+Task: Generate CSS Loading Effects Batch (50 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-loading-batch.ts` with exactly 50 loading effects
+- All effects have category `loading`, `isNew: true`
+- Each effect has real, working CSS code producing visible loading animations
+- CSS kept under 60 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations; all animations loop infinitely
+- Dark backgrounds (#0a0a1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Effect IDs (50 total)
+wave-dots-loader, bouncing-bars, spinning-ring, morphing-shapes, pulse-circle, dna-helix, bouncing-squares, rotating-squares, wave-line, ripple-loader, snake-loader, bar-chart-loader, battery-loader, clock-loader, equalizer-loader, flame-loader, hourglass-loader, pendulum-loader, radar-loader, signal-loader, sonar-loader, spiral-loader, atom-loader, cube-loader, pyramid-loader, spring-loader, rain-loader, snow-loader, fire-loader, water-loader, wind-loader, moon-loader, sun-loader, star-loader, heart-loader, diamond-loader, flower-loader, cloud-loader, bubble-loader, crystal-loader, ring-loader-2, multi-ring, double-helix, triple-dot-loader, hexagon-spin, infinite-loop, loading-text, sand-loader, orbit-loader-2, spinner-3d
+
+## Difficulty Distribution
+- beginner: 16 effects
+- intermediate: 24 effects
+- advanced: 10 effects
+
+## Tag Coverage
+loading, dots, wave, bars, bounce, ring, spin, morph, shapes, pulse, circle, dna, helix, science, squares, rotate, line, ripple, snake, chart, battery, charge, clock, time, equalizer, music, flame, fire, hourglass, pendulum, swing, radar, sweep, signal, wifi, sonar, ping, spiral, atom, orbit, cube, 3d, pyramid, spring, rain, drops, snow, winter, water, wind, moon, crescent, sun, rays, star, twinkle, heart, diamond, flower, petals, cloud, weather, bubble, float, crystal, gem, concentric, border, scale, hexagon, loop, typography, sand, hourglass, planets, spinner, perspective, depth
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 50 effects confirmed by grep count
+- All required IDs present and matching specification
+- File exports `effectsLoadingBatch` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-b-hover-borders
+Agent: general-purpose
+Task: Generate CSS Hover and Border Effects (50+50=100 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-hover-borders-batch.ts` with exactly 100 effects (50 hover + 50 border)
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 60 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0f0f1a, #050510, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Hover Effect IDs (50 total)
+tilt-hover, spotlight-hover, magnetic-hover, bounce-hover, shake-hover, pulse-hover, glow-hover, blur-hover, grayscale-hover, sepia-hover, invert-hover, brightness-hover, saturate-hover, hue-rotate-hover, opacity-hover, scale-hover-2, rotate-hover, skew-hover, translate-hover, flip-hover, fold-hover, reveal-hover, expand-hover, shrink-hover, zoom-hover, underline-hover-2, overline-hover, strikethrough-hover, border-draw-hover, fill-hover, color-shift-hover, gradient-hover, shadow-hover-2, lift-hover-2, press-hover, sink-hover, float-hover, swing-hover, spin-hover, elastic-hover, rubber-hover, jelly-hover, wave-hover, ripple-hover-2, cursor-hover, magnet-hover, snap-hover, flash-hover, pop-hover, wobble-hover
+
+## Border Effect IDs (50 total)
+animated-border-2, animated-border-3, animated-border-4, gradient-border-2, dashed-border-anim, border-spin-2, border-draw-2, border-fill, border-wipe, border-pulse, border-glow-2, border-dash-offset, border-color-cycle, corner-border, double-border, neon-border-2, rainbow-border, border-with-glow, border-rotation, border-scale, border-wave, border-ripple, border-bounce, border-shake, border-flip, border-fold, border-reveal, border-expand, border-zoom, border-blur, border-grayscale, border-sepia, border-invert, border-brightness, border-contrast, border-saturate, border-hue-rotate, border-opacity, border-mix, border-dashed-anim, border-dotted-anim, border-gradient-3, border-conic, border-diagonal, border-zigzag, border-wavy, border-double-line, border-candy, border-retro, border-glow-pulse
+
+## Difficulty Distribution
+- Hover: beginner 18, intermediate 23, advanced 9
+- Border: beginner 12, intermediate 24, advanced 14
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 50 hover + 50 border = 100 total effects confirmed by grep count
+- All specified IDs present and matching specification
+- File exports `effectsHoverBordersBatch` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-b-cards-bg
+Agent: general-purpose
+Task: Generate CSS Card and Background Effects (50+50=100 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-cards-bg-batch.ts` with exactly 100 effects (50 cards + 50 backgrounds)
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 60 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+- Background effects use `width: 100%; height: 100%; position: relative;` to fill their container
+
+## Card Effect IDs (50 total)
+tilt-card, reveal-card, stack-card, slide-card, expand-card, flip-card-v2, zoom-card, rotate-card, blur-reveal-card, spotlight-card, corner-fold-card, pop-up-card, bounce-card, elastic-card, glow-card, neon-card, holographic-card, metallic-card, paper-card, frosted-card, mirror-card, shadow-card, depth-card, 3d-perspective-card, cursor-follow-card, magnetic-card, wave-card, ripple-card, gradient-shift-card, color-cycle-card, minimal-card, brutalist-card, retro-card, neon-border-card, animated-border-card-v2, corner-accent-card, glass-card-v2, hover-tilt-card, floating-card, peel-card, swing-card, flip-h-card, flip-v-card, rotate-y-card, scale-up-card, dim-card, spotlight-hover-card, border-glow-card, shimmer-card, pulse-border-card
+
+## Background Effect IDs (50 total)
+mesh-gradient-2, animated-gradient-2, noise-bg, wave-bg, aurora-v2, starfield-bg, particle-field, dot-matrix-bg, hex-pattern, diamond-pattern, chevron-pattern, cross-pattern, circle-pattern, triangle-pattern, line-pattern, grid-pattern, organic-blob, morph-blob, plasma-bg, lava-bg, ocean-waves-bg, clouds-bg, fog-bg, rain-bg-2, snow-bg-2, sunset-bg, night-sky-bg, galaxy-bg, nebula-bg, meteor-bg, rainbow-bg, prism-bg, crystal-bg, marble-bg, water-ripple-bg, sand-dunes-bg, forest-bg, gradient-wave-bg, pulse-gradient, radial-burst, conic-spin, mesh-3d, aurora-3, gradient-orbs, floating-shapes, topography-bg, circuit-bg, binary-rain-bg, wave-gradient, dot-wave-bg
+
+## Difficulty Distribution
+- Cards: beginner 12, intermediate 26, advanced 12
+- Backgrounds: beginner 8, intermediate 30, advanced 12
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 50 cards + 50 backgrounds = 100 total effects confirmed by grep count
+- All specified IDs present and matching specification
+- File exports `effectsCardsBgBatch` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-c-part1
+Agent: general-purpose
+Task: Generate CSS Shadow, Input, and Toggle Effects (30+30+25=85 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-shadows-inputs-toggles.ts` with exactly 85 effects (30 shadows + 30 inputs + 25 toggles)
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 60 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Shadow Effect IDs (30 total)
+neon-shadow-2, glow-shadow, inner-glow-2, long-shadow, multi-shadow, colored-shadow, animated-shadow, shadow-pulse, shadow-spread, shadow-rotate, shadow-wave, shadow-bounce, shadow-lift-2, shadow-press, shadow-float, shadow-depth, shadow-3d, shadow-pop, shadow-swing, shadow-shake, shadow-blur, shadow-gradient, shadow-rainbow, shadow-fire, shadow-ice, shadow-electric, shadow-cosmic, shadow-nature, shadow-material, shadow-neon-pulse
+
+## Input Effect IDs (30 total)
+floating-label-input, underline-input, border-draw-input, shake-validation, success-animation-input, error-animation-input, input-glow, input-pulse, input-slide, input-expand, input-morph, input-reveal, input-gradient, input-neon, input-glass, input-3d, input-depth, input-shadow-2, underline-anim-input, label-slide-input, placeholder-anim, focus-ring-input, validation-check-input, error-shake-input, success-check-input, search-expand-input, textarea-grow, input-icon-slide, input-border-gradient, input-float-label-2
+
+## Toggle Effect IDs (25 total)
+ios-toggle, android-toggle, flat-toggle, 3d-toggle, neon-toggle, glow-toggle, morph-toggle, elastic-toggle, bounce-toggle, slide-toggle, flip-toggle, rotate-toggle, scale-toggle, fade-toggle, blur-toggle, gradient-toggle, dark-mode-toggle, light-switch-toggle, power-toggle, check-toggle, smiley-toggle, day-night-toggle, sun-moon-toggle, on-off-toggle, x-toggle
+
+## Difficulty Distribution
+- Shadows: beginner 10, intermediate 13, advanced 7
+- Inputs: beginner 10, intermediate 17, advanced 3
+- Toggles: beginner 4, intermediate 12, advanced 9
+
+## Tag Coverage
+neon, glow, shadow, dark, soft, light, inner, inset, long, flat, directional, multi, layered, colorful, colored, vibrant, accent, animated, moving, dynamic, pulse, breathing, spread, expanding, rotate, orbit, wave, ripple, bounce, spring, lift, hover, elevation, press, depth, float, levitation, 3d, perspective, solid, pop, swing, pendulum, shake, vibrate, blur, diffused, gradient, smooth, rainbow, fire, warm, ice, cold, frost, electric, energy, cosmic, space, galaxy, nature, organic, green, material, design, floating, label, input, underline, minimal, border, draw, validation, error, success, focus, neon, glass, frosted, 3d, depth, inset, shadow, center, animated, placeholder, typing, ring, accessibility, check, confirmation, shake, search, expand, textarea, grow, icon, slide, gradient, ios, switch, smooth, android, material, flat, 3d, neon, glow, morph, shape, elastic, spring, bounce, playful, slide, flip, rotate, spin, scale, grow, fade, opacity, blur, gradient, colorful, dark, mode, theme, light, realistic, power, button, check, smiley, fun, day, night, sun, moon, celestial, on, off, text, x
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 30 shadows + 30 inputs + 25 toggles = 85 total effects confirmed by grep count
+- All specified IDs present and matching specification
+- File exports `effectsShadowsInputsToggles` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-c-part2a
+Agent: general-purpose
+Task: Generate CSS Tooltip and Transition Effects (55 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-tooltips-transitions.ts` with exactly 55 effects (25 tooltips + 30 transitions)
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 50 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+- Tooltip effects use `::after` pseudo-elements with `data-tip` attributes for hover-reveal patterns
+
+## Tooltip Effect IDs (25 total)
+fade-tooltip, slide-tooltip, scale-tooltip, flip-tooltip, bounce-tooltip, elastic-tooltip, blur-tooltip, glow-tooltip, neon-tooltip, gradient-tooltip, arrow-tooltip, balloon-tooltip, speech-bubble, callout-tooltip, pinned-tooltip, animated-tooltip, shake-tooltip, pulse-tooltip, wave-tooltip, corner-tooltip, side-tooltip, bottom-tooltip, top-tooltip, left-tooltip, right-tooltip
+
+## Transition Effect IDs (30 total)
+fade-in, fade-out, slide-in, slide-out, scale-in, scale-out, rotate-in, rotate-out, flip-in, flip-out, blur-in, blur-out, skew-in, skew-out, bounce-in, bounce-out, elastic-in, elastic-out, spring-in, spring-out, swing-in, swing-out, shake-in, pulse-in, glow-in, expand-in, shrink-in, zoom-in, fold-in, dissolve-in
+
+## Difficulty Distribution
+- Tooltips: beginner 10, intermediate 14, advanced 1
+- Transitions: beginner 8, intermediate 12, advanced 10
+
+## Tag Coverage
+fade, slide, scale, flip, bounce, elastic, blur, glow, neon, gradient, arrow, balloon, speech, callout, pinned, animated, shake, pulse, wave, corner, side, bottom, top, left, right, tooltip, hover, opacity, translate, grow, 3d, rotate, perspective, spring, overshoot, focus, neon, shadow, bright, colorful, pointer, rounded, chat, pin, sticky, continuous, vibrate, breathing, sine, position, in, out, entrance, exit, spin, width, shrink, zoom, origami, dissolve, depth, pendulum, tilt, scale, expand, defocus, blur, glow
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 25 tooltips + 30 transitions = 55 total effects confirmed by grep count
+- All specified IDs present and matching specification
+- File exports `effectsTooltipsTransitions` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
+
+---
+Task ID: 2-c-part2b
+Agent: general-purpose
+Task: Generate CSS Progress and Notification Effects (60 effects)
+
+## Work Done
+- Created `/home/z/my-project/src/lib/effects-progress-notifs.ts` with exactly 60 effects (30 progress + 30 notifications)
+- All effects have `isNew: true`
+- Each effect has real, working CSS code producing visible effects
+- CSS kept under 50 lines per effect (most under 30)
+- Used standard CSS with @keyframes animations where needed
+- Dark backgrounds (#0a0a1a, #0f0f1a, #1a1a2e) used where appropriate; emerald accent #10b981 featured prominently
+
+## Progress Effect IDs (30 total)
+striped-progress-2, gradient-progress, animated-progress-2, circular-progress-2, semi-circle-progress, step-progress-2, wave-progress, pulse-progress, glow-progress, neon-progress, loading-progress-2, determinate-progress, indeterminate-progress, multi-color-progress, rainbow-progress, gradient-fill-2, progress-label, progress-glow, progress-shadow, thin-progress, thick-progress, rounded-progress-2, square-progress, diamond-progress, star-progress, heart-progress, flame-progress, water-progress, lightning-progress, candy-progress
+
+## Notification Effect IDs (30 total)
+slide-in-notif, fade-notif, bounce-notif, flip-notif, scale-notif, toast-notif, alert-notif, success-notif, error-notif, warning-notif, info-notif, badge-pulse-2, badge-bounce, badge-glow, badge-shake, badge-pop, badge-slide, notif-stack, notif-dismiss, notif-expand, notif-progress-2, notif-timer, notif-countdown, notif-icon-anim, notif-ripple, notif-glow, notif-neon, notif-gradient, notif-glass, notif-minimal
+
+## Difficulty Distribution
+- Progress: beginner 13, intermediate 11, advanced 6
+- Notifications: beginner 12, intermediate 13, advanced 5
+
+## Tag Coverage
+Progress: striped, animated, bar, gradient, colorful, fill, circular, spinner, ring, semi-circle, arc, gauge, steps, wizard, milestone, wave, liquid, pulse, breathing, glow, neon, bright, loading, indeterminate, determinate, percentage, multi-color, segments, rainbow, label, text, shadow, depth, elevated, thin, minimal, slim, thick, bold, chunky, rounded, pill, smooth, square, angular, sharp, diamond, geometric, star, rating, heart, love, flame, fire, warm, water, fluid, lightning, electric, fast, candy, sweet, playful
+
+Notifications: slide, entrance, fade, simple, bounce, playful, flip, 3d, scale, zoom, toast, bottom, popup, alert, important, urgent, success, green, confirmation, error, red, danger, warning, amber, caution, info, blue, notice, badge, pulse, count, glow, neon, shake, attention, pop, appear, stack, multiple, layered, dismiss, close, interactive, expand, details, progress, bar, upload, timer, auto-dismiss, countdown, number, icon, animated, bell, ripple, wave, click, bright, retro, gradient, colorful, modern, glass, frosted, blur, minimal, clean, simple
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- 30 progress + 30 notifications = 60 total effects confirmed by grep count
+- All specified IDs present and matching specification
+- File exports `effectsProgressNotifs` array of type `CSSEffect[]`
+- Type definitions included in file (Difficulty, CSSEffect)
