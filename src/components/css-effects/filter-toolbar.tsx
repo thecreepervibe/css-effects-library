@@ -6,6 +6,7 @@ import type { Difficulty } from '@/lib/effects-data';
 import { LayoutGrid, List, Shuffle, Keyboard, X } from 'lucide-react';
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export function FilterToolbar() {
   const {
@@ -88,6 +89,11 @@ export function FilterToolbar() {
     }
   };
 
+  const handleClearAll = () => {
+    clearAllFilters();
+    toast('All filters cleared', { duration: 1500 });
+  };
+
   // Active filter chips data
   const activeFilters: { label: string; onClear: () => void }[] = [];
   if (selectedCategory !== 'all') {
@@ -143,7 +149,7 @@ export function FilterToolbar() {
 
         {hasActiveFilters && (
           <button
-            onClick={clearAllFilters}
+            onClick={handleClearAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/20 transition-all"
           >
             <X className="w-3 h-3" />
@@ -198,7 +204,7 @@ export function FilterToolbar() {
 
         <button
           className="p-1.5 text-gray-600 hover:text-gray-400 transition-colors"
-          title="Keyboard shortcuts: / to search, Esc to close"
+          title="Keyboard shortcuts: / to search, ↑↓ to navigate, Enter to open, Esc to close"
         >
           <Keyboard className="w-4 h-4" />
         </button>

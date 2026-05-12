@@ -9,7 +9,7 @@ import { EffectDetailModal } from '@/components/css-effects/effect-detail-modal'
 import { Footer } from '@/components/css-effects/footer';
 import { useEffectsStore } from '@/lib/effects-store';
 import { effects, collections } from '@/lib/effects-data';
-import { Menu, ArrowUp, GitCompare, X } from 'lucide-react';
+import { Menu, ArrowUp, GitCompare, X, SearchX, RotateCcw, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Compare Modal Component
@@ -203,7 +203,7 @@ function CompareModal() {
   );
 }
 
-// Scroll to top button
+// Scroll to top button with smooth scroll
 function ScrollToTop() {
   const [visible, setVisible] = useState(false);
 
@@ -215,6 +215,10 @@ function ScrollToTop() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <AnimatePresence>
       {visible && (
@@ -222,14 +226,74 @@ function ScrollToTop() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={handleScrollToTop}
           className="fixed bottom-6 right-6 z-40 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-500/10"
           title="Scroll to top"
+          aria-label="Scroll to top"
         >
           <ArrowUp className="w-4 h-4" />
         </motion.button>
       )}
     </AnimatePresence>
+  );
+}
+
+// Enhanced empty state component
+function EmptyState() {
+  const { clearAllFilters, setSelectedCategory, setSearchQuery } = useEffectsStore();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col items-center justify-center py-24 text-center"
+    >
+      {/* Animated illustration */}
+      <div className="relative mb-8">
+        <div className="w-28 h-28 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center float-bounce">
+          <SearchX className="w-10 h-10 text-emerald-500/30" />
+        </div>
+        {/* Decorative dots */}
+        <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-emerald-500/10 float-bounce" style={{ animationDelay: '0.5s' }} />
+        <div className="absolute -bottom-1 -left-3 w-3 h-3 rounded-full bg-emerald-500/10 float-bounce" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <h3 className="text-xl font-semibold text-gray-300 mb-2">No effects found</h3>
+      <p className="text-sm text-gray-500 max-w-md mb-6">
+        We couldn&apos;t find any effects matching your current filters. Try one of these options:
+      </p>
+
+      {/* Suggestion buttons */}
+      <div className="flex flex-wrap justify-center gap-3">
+        <button
+          onClick={() => {
+            clearAllFilters();
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Clear all filters
+        </button>
+        <button
+          onClick={() => setSelectedCategory('text')}
+          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-400 text-sm font-medium hover:border-gray-700 hover:text-gray-300 transition-all"
+        >
+          <Compass className="w-4 h-4" />
+          Browse Text Effects
+        </button>
+        <button
+          onClick={() => {
+            setSearchQuery('button');
+            setSelectedCategory('all');
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-400 text-sm font-medium hover:border-gray-700 hover:text-gray-300 transition-all"
+        >
+          <SearchX className="w-4 h-4" />
+          Search &quot;button&quot;
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -245,6 +309,10 @@ export default function HomePage() {
     setSidebarOpen,
     compareIds,
     setCompareModalOpen,
+    setSelectedEffectId,
+    selectedEffectId,
+    focusedEffectIndex,
+    setFocusedEffectIndex,
   } = useEffectsStore();
 
   const filteredEffects = useMemo(() => {
@@ -288,6 +356,86 @@ export default function HomePage() {
     return filtered;
   }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection]);
 
+  // Update filtered count in store
+  useEffect(() => {
+    useEffectsStore.getState().setFilteredCount(filteredEffects.length);
+  }, [filteredEffects.length]);
+
+  // URL hash handling for effect sharing
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#effect=')) {
+      const effectId = hash.replace('#effect=', '');
+      const effectExists = effects.some((e) => e.id === effectId);
+      if (effectExists) {
+        // Small delay to let the page render first
+        setTimeout(() => setSelectedEffectId(effectId), 300);
+      }
+    }
+  }, [setSelectedEffectId]);
+
+  // Update URL hash when effect is selected
+  useEffect(() => {
+    if (selectedEffectId) {
+      window.location.hash = `effect=${selectedEffectId}`;
+    } else {
+      // Only clear hash if it was set by us
+      if (window.location.hash.startsWith('#effect=')) {
+        window.location.hash = '';
+      }
+    }
+  }, [selectedEffectId]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when typing in input
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      // Don't intercept when modal is open
+      if (useEffectsStore.getState().selectedEffectId) return;
+      // Don't intercept when compare modal is open
+      if (useEffectsStore.getState().compareModalOpen) return;
+
+      const currentFiltered = filteredEffects;
+      if (currentFiltered.length === 0) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'ArrowRight': {
+          e.preventDefault();
+          const current = useEffectsStore.getState().focusedEffectIndex;
+          const next = current === null ? 0 : Math.min(current + 1, currentFiltered.length - 1);
+          setFocusedEffectIndex(next);
+          break;
+        }
+        case 'ArrowUp':
+        case 'ArrowLeft': {
+          e.preventDefault();
+          const current = useEffectsStore.getState().focusedEffectIndex;
+          const next = current === null ? 0 : Math.max(current - 1, 0);
+          setFocusedEffectIndex(next);
+          break;
+        }
+        case 'Enter': {
+          const current = useEffectsStore.getState().focusedEffectIndex;
+          if (current !== null && current < currentFiltered.length) {
+            e.preventDefault();
+            setSelectedEffectId(currentFiltered[current].id);
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredEffects, setFocusedEffectIndex, setSelectedEffectId]);
+
+  // Reset focused index when filters change
+  useEffect(() => {
+    setFocusedEffectIndex(null);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, setFocusedEffectIndex]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-gray-100">
       {/* Top section: Header */}
@@ -322,20 +470,7 @@ export default function HomePage() {
           {/* Effects grid / list */}
           <div className="mt-4">
             {filteredEffects.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="flex flex-col items-center justify-center py-24 text-center"
-              >
-                <div className="w-24 h-24 mb-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center">
-                  <span className="text-4xl">🔍</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-300 mb-2">No effects found</h3>
-                <p className="text-sm text-gray-500 max-w-sm">
-                  Try adjusting your filters or search query. You can also click &quot;Clear all&quot; to reset all filters.
-                </p>
-              </motion.div>
+              <EmptyState />
             ) : viewMode === 'grid' ? (
               <div
                 className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -345,7 +480,12 @@ export default function HomePage() {
               >
                 <AnimatePresence mode="popLayout">
                   {filteredEffects.map((effect, index) => (
-                    <EffectCard key={effect.id} effect={effect} index={index} />
+                    <EffectCard
+                      key={effect.id}
+                      effect={effect}
+                      index={index}
+                      isFocused={focusedEffectIndex === index}
+                    />
                   ))}
                 </AnimatePresence>
               </div>
@@ -353,7 +493,12 @@ export default function HomePage() {
               <div className="flex flex-col gap-2">
                 <AnimatePresence mode="popLayout">
                   {filteredEffects.map((effect, index) => (
-                    <EffectCard key={effect.id} effect={effect} index={index} />
+                    <EffectCard
+                      key={effect.id}
+                      effect={effect}
+                      index={index}
+                      isFocused={focusedEffectIndex === index}
+                    />
                   ))}
                 </AnimatePresence>
               </div>

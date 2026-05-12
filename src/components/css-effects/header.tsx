@@ -6,7 +6,7 @@ import { useEffectsStore } from '@/lib/effects-store';
 import { effects } from '@/lib/effects-data';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Particle dot for the header background
+// Subtle particle dots for the header background
 function HeaderParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -17,7 +17,8 @@ function HeaderParticles() {
     if (!ctx) return;
 
     const particles: { x: number; y: number; vx: number; vy: number; size: number; opacity: number }[] = [];
-    const numParticles = 40;
+    // Fewer, more subtle particles
+    const numParticles = 20;
 
     const resize = () => {
       canvas.width = canvas.offsetWidth;
@@ -30,10 +31,11 @@ function HeaderParticles() {
       particles.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.3 + 0.1,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        // Smaller, fainter particles
+        size: Math.random() * 1.5 + 0.5,
+        opacity: Math.random() * 0.15 + 0.05,
       });
     }
 
@@ -78,8 +80,6 @@ export function Header() {
     return true;
   });
 
-  // Display filtered count directly with animation via AnimatePresence
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '/' && document.activeElement !== inputRef.current) {
@@ -118,10 +118,17 @@ export function Header() {
       transition={{ duration: 0.5 }}
       className="text-center mb-6 relative"
     >
-      {/* Particle background */}
-      <div className="absolute inset-0 overflow-hidden rounded-xl opacity-60">
+      {/* Particle background - more subtle with lower opacity */}
+      <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40">
         <HeaderParticles />
       </div>
+
+      {/* Subtle gradient overlay behind text for readability */}
+      <div className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(10, 10, 10, 0.6) 0%, transparent 70%)',
+        }}
+      />
 
       {/* Badge with shimmer */}
       <div className="relative inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-full mb-3 overflow-hidden">
@@ -130,7 +137,7 @@ export function Header() {
         <span className="text-emerald-400/70 text-[10px] font-medium tracking-wider uppercase relative z-10">CSS EFFECTS LAB</span>
       </div>
 
-      <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">
+      <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight relative z-10">
         CSS{' '}
         <span
           className="gradient-text-animate"
@@ -147,12 +154,12 @@ export function Header() {
         </span>{' '}
         Library
       </h1>
-      <p className="text-gray-500 max-w-2xl mx-auto mb-5 text-sm">
+      <p className="text-gray-500 max-w-2xl mx-auto mb-5 text-sm relative z-10">
         A curated collection of beautiful CSS effects with live preview &amp; ready-to-use code. Copy, paste, and create magic. ✨
       </p>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-3 max-w-lg mx-auto mb-5">
+      {/* Search Bar - full width on mobile */}
+      <div className="flex items-center gap-3 max-w-lg mx-auto mb-5 px-2 sm:px-0 relative z-10">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
@@ -169,7 +176,7 @@ export function Header() {
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all shrink-0"
         >
           <Shuffle className="w-4 h-4" />
-          Random
+          <span className="hidden sm:inline">Random</span>
         </button>
         <button
           onClick={handleToggleTheme}
@@ -180,16 +187,16 @@ export function Header() {
         </button>
       </div>
 
-      {/* Stats Row with counter badge */}
-      <div className="flex flex-wrap justify-center gap-4 md:gap-6">
+      {/* Stats Row - larger and more prominent pills */}
+      <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
         {[
-          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400', isCounter: false },
-          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400', isCounter: false },
-          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400', isCounter: false },
-          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400', isCounter: false },
+          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400' },
+          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400' },
+          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400' },
+          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400' },
         ].map((stat) => (
-          <div key={stat.label} className="flex items-center gap-2 bg-[#111]/50 px-3 py-1.5 rounded-lg border border-gray-800/30">
-            <stat.icon className={`w-3.5 h-3.5 ${stat.color} opacity-70`} />
+          <div key={stat.label} className="flex items-center gap-2 bg-[#111]/70 px-4 py-2 rounded-xl border border-gray-800/40">
+            <stat.icon className={`w-4 h-4 ${stat.color} opacity-70`} />
             <span className={`${stat.color} font-bold text-sm`}>{stat.value}</span>
             <span className="text-gray-500 text-xs">{stat.label}</span>
           </div>
@@ -201,7 +208,7 @@ export function Header() {
             key={filteredCount}
             initial={{ scale: 1.2, opacity: 0.5 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20"
+            className="flex items-center gap-2 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20"
           >
             <span className="text-emerald-400 font-bold text-sm">{filteredCount}</span>
             <span className="text-emerald-400/70 text-xs">matching</span>

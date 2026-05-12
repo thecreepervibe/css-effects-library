@@ -5,21 +5,32 @@ import { useEffectsStore } from '@/lib/effects-store';
 import { motion } from 'framer-motion';
 import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface EffectCardProps {
   effect: CSSEffect;
   index: number;
+  isFocused?: boolean;
 }
 
-export function EffectCard({ effect, index }: EffectCardProps) {
+// Count semicolons in CSS as rough complexity metric
+function getComplexity(cssCode: string): number {
+  const semicolonCount = (cssCode.match(/;/g) || []).length;
+  // Normalize to 0-100 range (typical CSS effect has 5-50 semicolons)
+  return Math.min(100, Math.round((semicolonCount / 40) * 100));
+}
+
+export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds } = useEffectsStore();
   const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const isFavorited = favorites.includes(effect.id);
   const isComparing = compareIds.includes(effect.id);
+  const complexity = getComplexity(effect.cssCode);
 
   // Inject CSS for the preview
   useEffect(() => {
@@ -113,16 +124,28 @@ export function EffectCard({ effect, index }: EffectCardProps) {
     };
   }, [effect]);
 
+  // Scroll focused card into view
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isFocused]);
+
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(effect.cssCode + '\n\n' + effect.htmlCode);
     setCopied(true);
+    toast.success('Code copied to clipboard!', { duration: 2000 });
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const isNowFav = !isFavorited;
     toggleFavorite(effect.id);
+    toast(isNowFav ? 'Added to favorites ❤️' : 'Removed from favorites', {
+      duration: 1500,
+    });
   };
 
   const handleCompare = (e: React.MouseEvent) => {
@@ -136,16 +159,22 @@ export function EffectCard({ effect, index }: EffectCardProps) {
     advanced: 'bg-red-500/15 text-red-400 border-red-500/20',
   };
 
+  const complexityColor = complexity > 70 ? 'bg-red-500' : complexity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
+
   if (viewMode === 'compact') {
     return (
       <motion.div
+        ref={cardRef}
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.4) }}
         onClick={() => setSelectedEffectId(effect.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="flex items-center gap-4 p-3 bg-[#111] border border-gray-800/50 rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer group relative"
+        className={`flex items-center gap-4 p-3 bg-[#111] border rounded-xl hover:border-emerald-500/30 transition-all cursor-pointer group relative ${
+          isFocused ? 'effect-card-focused border-emerald-500/40' : 'border-gray-800/50'
+        }`}
+        data-effect-index={index}
       >
         {/* Compare checkbox */}
         <button
@@ -162,7 +191,7 @@ export function EffectCard({ effect, index }: EffectCardProps) {
         {/* Mini preview */}
         <div
           ref={previewRef}
-          className="w-16 h-12 rounded-lg overflow-hidden bg-[#0a0a0a] shrink-0 flex items-center justify-center border border-gray-800/30"
+          className="w-16 h-12 rounded-lg overflow-hidden bg-[#0a0a0a] shrink-0 flex items-center justify-center border border-gray-800/30 pointer-events-none"
         />
 
         <div className="flex-1 min-w-0">
@@ -208,15 +237,28 @@ export function EffectCard({ effect, index }: EffectCardProps) {
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 15, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.025, 0.5), ease: [0.25, 0.46, 0.45, 0.94] }}
       onClick={() => setSelectedEffectId(effect.id)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative bg-[#111] border border-gray-800/50 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+      className={`group relative bg-[#111] border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ${
+        isFocused ? 'effect-card-focused border-emerald-500/40' : 'border-gray-800/50'
+      }`}
       style={{
         minHeight: `${cardSize * 2}px`,
+      }}
+      data-effect-index={index}
+      tabIndex={0}
+      role="button"
+      aria-label={`View ${effect.name} effect`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setSelectedEffectId(effect.id);
+        }
       }}
     >
       {/* Animated gradient border on hover */}
@@ -237,7 +279,7 @@ export function EffectCard({ effect, index }: EffectCardProps) {
       <div className="group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-emerald-500/10 transition-all duration-300 h-full flex flex-col">
         {/* Preview area */}
         <div
-          className="relative overflow-hidden flex items-center justify-center"
+          className="relative overflow-hidden flex items-center justify-center card-preview-shimmer"
           style={{ height: `${previewHeight}px` }}
         >
           <div className="absolute inset-0 bg-[#0a0a0a]">
@@ -250,18 +292,18 @@ export function EffectCard({ effect, index }: EffectCardProps) {
             />
           </div>
 
-          {/* Preview content with scale animation */}
+          {/* Preview content with scale animation - pointer-events-none to ensure clicks pass through */}
           <div
             ref={previewRef}
-            className="relative z-10 flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-400"
+            className="relative z-10 flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-400 pointer-events-none"
           />
 
-          {/* "View Code →" overlay on hover */}
+          {/* "View Code →" overlay on hover with backdrop blur */}
           <motion.div
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent py-3 px-4 flex items-center justify-center z-20"
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent py-3 px-4 flex items-center justify-center z-20 backdrop-blur-[2px]"
           >
             <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
               View Code <span className="text-emerald-400">→</span>
@@ -301,8 +343,16 @@ export function EffectCard({ effect, index }: EffectCardProps) {
           </motion.button>
         </div>
 
+        {/* Complexity bar under preview */}
+        <div className="h-0.5 bg-gray-800/50 w-full">
+          <div
+            className={`h-full ${complexityColor} transition-all duration-500`}
+            style={{ width: `${complexity}%` }}
+          />
+        </div>
+
         {/* Card info */}
-        <div className="p-4 border-t border-gray-800/30 flex-1 flex flex-col">
+        <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 className="text-sm font-semibold text-gray-200 truncate group-hover:text-emerald-400 transition-colors">
               {effect.name}
@@ -323,6 +373,9 @@ export function EffectCard({ effect, index }: EffectCardProps) {
               {effect.difficulty}
             </span>
             <span className="text-[10px] text-gray-600 capitalize">{effect.category.replace('-', ' ')}</span>
+            <span className="text-[10px] text-gray-700 ml-auto" title="Complexity based on CSS properties">
+              {complexity > 70 ? 'Complex' : complexity > 40 ? 'Medium' : 'Simple'}
+            </span>
           </div>
 
           <div className="flex flex-wrap gap-1 mb-3">

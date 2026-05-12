@@ -214,3 +214,56 @@ input[type="range"]::-moz-range-thumb {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+/* Card preview shimmer */
+@keyframes card-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.card-preview-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(16, 185, 129, 0.03) 25%,
+    rgba(16, 185, 129, 0.06) 50%,
+    rgba(16, 185, 129, 0.03) 75%,
+    transparent 100%
+  );
+  animation: card-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Sidebar scroll snap */
+.sidebar-scroll-snap {
+  scroll-snap-type: y proximity;
+}
+
+.sidebar-scroll-snap > * {
+  scroll-snap-align: start;
+}
+
+/* Keyboard focus indicator for effect cards */
+.effect-card-focused {
+  outline: 2px solid #10b981 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15), 0 0 20px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Empty state animation */
+@keyframes float-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-bounce {
+  animation: float-bounce 3s ease-in-out infinite;
+}
+
+/* Smooth scroll for the page */
+html {
+  scroll-behavior: smooth;
+}

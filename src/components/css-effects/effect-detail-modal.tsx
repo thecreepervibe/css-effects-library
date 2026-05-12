@@ -4,27 +4,49 @@ import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
-// Simple syntax highlighting for CSS code
+// Enhanced syntax highlighting for CSS code
 function highlightCSS(code: string): string {
   return code
-    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6b7280">$1</span>')
+    // Comments
+    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6b7280;font-style:italic">$1</span>')
+    // @ rules and keyframes name
     .replace(/(@[\w-]+)/g, '<span style="color:#c084fc">$1</span>')
-    .replace(/^([.#:@][\w-]+)/gm, '<span style="color:#67e8f9">$1</span>')
-    .replace(/([\w-]+)(\s*:)/g, '<span style="color:#93c5fd">$1</span>$2')
-    .replace(/(\d+\.?\d*)(px|rem|em|%|deg|s|ms|fr|vh|vw)/g, '<span style="color:#fbbf24">$1$2</span>')
-    .replace(/(#[0-9a-fA-F]{3,8})/g, '<span style="color:#f472b6">$1</span>')
-    .replace(/\b(infinite|ease|linear|alternate|forwards|none|auto|transparent|solid|dashed|hidden|visible|relative|absolute|fixed|sticky|flex|grid|block|inline|center|space-between|column|row|wrap|nowrap|inherit|initial|unset|ease-in-out|ease-in|ease-out|step-end|normal|pointer|collapse|separate|cover|contain|scroll|no-repeat|border-box|content-box)\b/g, '<span style="color:#34d399">$1</span>');
+    // Selectors (., #, :, [ at start of line)
+    .replace(/^([.#:@\[][\w\-"'=\\\s]*)(?=\s*\{)/gm, '<span style="color:#67e8f9">$1</span>')
+    // Property names before colon (but not inside values)
+    .replace(/^(\s*)([\w-]+)(\s*:)/gm, '$1<span style="color:#93c5fd">$2</span>$3')
+    // Numeric values with units
+    .replace(/(\b\d+\.?\d*)(px|rem|em|%|deg|s|ms|fr|vh|vw|turn|cm|mm|in|pt|pc)/g, '<span style="color:#fbbf24">$1$2</span>')
+    // Hex colors
+    .replace(/(#[0-9a-fA-F]{3,8})\b/g, '<span style="color:#f472b6">$1</span>')
+    // RGB/RGBA/HSL functions
+    .replace(/\b(rgba?|hsla?)\s*\(/g, '<span style="color:#f472b6">$1(</span>')
+    // Keywords
+    .replace(/\b(infinite|ease|linear|alternate|alternate-reverse|forwards|backwards|both|none|auto|transparent|solid|dashed|dotted|hidden|visible|relative|absolute|fixed|sticky|flex|grid|block|inline|inline-block|center|space-between|space-around|space-evenly|column|row|wrap|nowrap|inherit|initial|unset|ease-in-out|ease-in|ease-out|step-end|step-start|normal|pointer|collapse|separate|cover|contain|scroll|no-repeat|border-box|content-box|bold|italic|uppercase|lowercase|capitalize|baseline|middle|top|bottom|left|right|start|end|stretch|scale|rotate|translate|skew|matrix|perspective|currentcolor|evenodd|nonzero)\b/g, '<span style="color:#34d399">$1</span>')
+    // !important
+    .replace(/(!important)/g, '<span style="color:#f87171;font-weight:bold">$1</span>')
+    // String values
+    .replace(/(["'])([^"']*)\1/g, '<span style="color:#fbbf24">$1$2$1</span>')
+    // Braces
+    .replace(/([{}])/g, '<span style="color:#9ca3af">$1</span>');
 }
 
 function highlightHTML(code: string): string {
   return code
-    .replace(/(&lt;|<)(\/?[\w-]+)/g, '$1<span style="color:#f472b6">$2</span>')
-    .replace(/([\w-]+)(=)/g, '<span style="color:#93c5fd">$1</span>$2')
+    // Tags
+    .replace(/(&lt;|<)(\/?)([\w-]+)/g, '$1$2<span style="color:#f472b6">$3</span>')
+    // Attribute names
+    .replace(/([\w-]+)(=)/g, '<span style="color:#93c5fd">$1</span><span style="color:#9ca3af">$2</span>')
+    // Attribute values
     .replace(/(".*?")/g, '<span style="color:#fbbf24">$1</span>')
-    .replace(/(\/?>)/g, '<span style="color:#6b7280">$1</span>');
+    // Closing bracket
+    .replace(/(\/?>)/g, '<span style="color:#9ca3af">$1</span>')
+    // Comments
+    .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span style="color:#6b7280;font-style:italic">$1</span>');
 }
 
 function addLineNumbers(code: string): string {
@@ -155,7 +177,14 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
+    toast.success(`${label === 'all' ? 'All code' : label.toUpperCase()} copied to clipboard!`, { duration: 2000 });
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}${window.location.pathname}#effect=${effect.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Share URL copied to clipboard!', { duration: 2000 });
   };
 
   const difficultyColors = {
@@ -224,6 +253,15 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
               <p className="text-xs text-gray-500 mt-1">{effect.description}</p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Share button */}
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all text-xs"
+                title="Copy share URL"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Share</span>
+              </button>
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"

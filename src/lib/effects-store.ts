@@ -59,6 +59,10 @@ interface EffectsStore {
   // Filtered count for badge
   filteredCount: number;
   setFilteredCount: (count: number) => void;
+
+  // Keyboard navigation - focused effect index in the filtered list
+  focusedEffectIndex: number | null;
+  setFocusedEffectIndex: (index: number | null) => void;
 }
 
 function loadFromLocalStorage<T>(key: string, fallback: T): T {
@@ -168,4 +172,8 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   // Filtered count
   filteredCount: 198,
   setFilteredCount: (count) => set({ filteredCount: count }),
+
+  // Keyboard navigation
+  focusedEffectIndex: null,
+  setFocusedEffectIndex: (index) => set({ focusedEffectIndex: index }),
 }));
