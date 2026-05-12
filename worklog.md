@@ -409,3 +409,118 @@ Task: Make comprehensive styling improvements and add new features
 - No changes to effects-data.ts
 - TypeScript strict typing throughout
 - All components properly use store state
+
+---
+Task ID: 8 (Cron Review Round 4)
+Agent: Main Agent (Comprehensive Features + Styling Polish)
+
+Task: Add Live CSS Playground, Featured Collection, Batch Export, and extensive styling improvements
+
+## MANDATORY NEW FEATURES COMPLETED:
+
+### 1. Live CSS Playground / Code Editor
+- Added 4th tab "Playground" (with Terminal icon) in the detail modal
+- Playground tab shows two side-by-side panels:
+  - Left: textarea code editor with monospace font, dark background (#0d1117), line numbers
+  - Right: Live preview that updates in real-time as user types
+- Uses debounced approach (300ms delay) for CSS changes
+- Modified CSS is injected via style tag with unique class prefixes for scoping
+- "Reset" button reverts to the original CSS
+- "Copy Modified" button copies the user's modified CSS
+- Added `playgroundCss`, `setPlaygroundCss`, `resetPlaygroundCss` to Zustand store
+- Playground CSS is properly scoped with unique prefixes (same approach as card previews)
+- Code area styled with `.playground-textarea` class (dark bg, monospace font, green focus border)
+
+### 2. Featured / Editor's Picks Collection
+- Added `featuredEffectIds` array in effects-store.ts with 12 visually impressive effects:
+  aurora-bg, gradient-mesh, neon-glow-text, floating-particles, glassmorphism-card,
+  3d-text, confetti, matrix-rain, rain-effect, lightning, gradient-border-card, flip-card
+- Added `selectedFeatured`, `setSelectedFeatured`, `toggleSelectedFeatured` to store
+- When featured is selected, `selectedCollection` is set to 'featured' (virtual collection)
+- In sidebar, added "⭐ Featured" section ABOVE categories (below mobile close button)
+- Featured section is collapsible like Favorites/Recently Viewed sections
+- Each featured effect shown with Star icon and ★ badge
+- Clicking featured item filters to show only featured effects
+- Filtering logic in page.tsx and filter-toolbar.tsx handles `selectedFeatured` / `selectedCollection === 'featured'`
+- "⭐ Featured" chip appears in active filter chips when active
+- clearAllFilters also resets selectedFeatured
+
+### 3. Batch Export Feature
+- Added "Batch Export" button in filter toolbar (next to "Surprise me" button)
+- Clicking shows a dropdown menu with 3 export options:
+  - "Export All Visible (X effects)" - exports currently filtered effects as one HTML file
+  - "Export Favorites" - exports all favorited effects as one HTML file
+  - "Export Compared (X effects)" - exports compared effects as one HTML file
+- Exported HTML file contains all effects with their CSS and HTML, organized in grid layout
+- Each effect in exported file has: title, difficulty badge, description, live preview, collapsible CSS/HTML code
+- Professional dark-themed HTML template with responsive grid
+- Uses Blob + URL.createObjectURL for download
+- Toast notification confirms export with count
+- Dropdown menu styled for both light/dark themes
+- Menu closes on click outside
+
+## MANDATORY STYLING IMPROVEMENTS COMPLETED:
+
+### 1. Animated Page Background
+- Added subtle animated gradient mesh background to entire page using `.animated-bg::before`
+- Uses CSS only (no JavaScript) with multiple layered radial gradients
+- Gradients slowly animate position via `bg-mesh-drift` keyframe animation (20s alternate)
+- Light theme: soft pastel gradients (emerald, blue, purple at very low opacity)
+- Dark theme: deeper subtle colors (slightly higher opacity for visibility)
+- Very subtle - does not distract from content
+
+### 2. Card Hover Micro-interactions
+- Added `.card-shine` class with `::before` pseudo-element
+- On hover, a thin emerald shine line sweeps left-to-right across the card (0.6s animation)
+- Favorite heart button does "pop" scale animation when toggled (`.heart-pop` class)
+  - Animates: scale(1) → scale(1.4) → scale(0.9) → scale(1) over 0.4s
+- Compare checkbox does "checkmark draw" animation when toggled (`.checkmark-draw` class)
+  - Animates: scale(0) rotate(-45deg) → scale(1.2) rotate(0) → scale(1) over 0.3s
+- Both animations tracked via `heartAnimating`/`checkAnimating` state with timeout cleanup
+
+### 3. Modal Open/Close Polish
+- Staggered reveal on modal open:
+  - Header: `modal-stagger-header` class (0.1s delay, fade + slide from top)
+  - Tabs: `modal-stagger-tabs` class (0.2s delay, fade + slide from top)
+  - Content: `modal-stagger-content` class (0.3s delay, fade + slide from bottom)
+- Smooth close: `isClosing` state triggers scale-down + fade-out animation (0.2s)
+- Backdrop has slight brightness reduction on open (brightness(0.95))
+- `handleClose` uses useCallback for proper hook dependency
+
+### 4. Sidebar Visual Enhancement
+- Added `.sidebar-accent-line` class - subtle vertical gradient on left edge
+  - 2px wide gradient from transparent → emerald (30%/60%/30%) → transparent
+- Category hover: `.sidebar-category-item` with `::after` pseudo-element
+  - Left border grows from 0 to full height on hover (0.2s ease-out)
+  - Active category also shows the left border
+- Category count badge: `.category-count-badge.has-new` shows pulsing dot for NEW categories
+  - Small 5px green dot with `badge-pulse` animation (2s infinite)
+
+### 5. Scroll Progress Indicator
+- Added `<ScrollProgress>` component at top of page
+- Thin 2px emerald progress bar (fixed position, z-index above header)
+- Grows from left to right based on scroll position
+- Has subtle box-shadow glow effect
+- Hidden when at top of page (scrollY === 0)
+- Uses passive scroll event listener for performance
+- Proper ARIA attributes (progressbar role, aria-valuenow, aria-label)
+
+### 6. Better Empty State for Search History
+- When search history is empty, shows friendly message instead of empty dropdown
+- Clock icon in emerald-bordered container
+- "Your search history will appear here" message
+- "Start typing to search for effects" hint text
+- Styled for both light/dark themes
+
+### 7. Toast Styling Enhancement
+- Added `.toast-accent` CSS class with emerald left-border (3px solid)
+- Added `.toast-slide-in` animation (slides from right, 0.3s ease-out)
+- Reduced motion preference disables toast animations
+
+## Code Quality
+- All lint errors fixed (0 errors, 0 warnings)
+- Fixed `handleClose` hoisting issue by using `useCallback` before the `useEffect` that references it
+- Dev server compiles successfully (200 status)
+- No changes to effects-data.ts
+- TypeScript strict typing throughout
+- All new features properly integrated with existing store and components

@@ -30,6 +30,8 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds, theme } = useEffectsStore();
   const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [heartAnimating, setHeartAnimating] = useState(false);
+  const [checkAnimating, setCheckAnimating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -151,6 +153,8 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     e.stopPropagation();
     const isNowFav = !isFavorited;
     toggleFavorite(effect.id);
+    setHeartAnimating(true);
+    setTimeout(() => setHeartAnimating(false), 400);
     toast(isNowFav ? 'Added to favorites ❤️' : 'Removed from favorites', {
       duration: 1500,
     });
@@ -159,6 +163,8 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const handleCompare = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleCompare(effect.id);
+    setCheckAnimating(true);
+    setTimeout(() => setCheckAnimating(false), 300);
   };
 
   const difficultyColors = {
@@ -188,7 +194,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
         onClick={() => setSelectedEffectId(effect.id)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`flex items-center gap-4 p-3 border rounded-xl transition-all cursor-pointer group relative emerald-pulse-glow ${
+        className={`flex items-center gap-4 p-3 border rounded-xl transition-all cursor-pointer group relative emerald-pulse-glow card-shine ${
           isFocused ? 'effect-card-focused border-emerald-500/40' : ''
         } ${isDark ? 'bg-[#111] border-gray-800/50 hover:border-emerald-500/30' : 'bg-white border-gray-200 hover:border-emerald-500/40 shadow-sm'}`}
         data-effect-index={index}
@@ -203,7 +209,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               : isDark ? 'border-gray-700 hover:border-emerald-500/50' : 'border-gray-300 hover:border-emerald-500/50'
           }`}
         >
-          {isComparing && <GitCompare className="w-3 h-3" />}
+          {isComparing && <GitCompare className={`w-3 h-3 ${checkAnimating ? 'checkmark-draw' : ''}`} />}
         </button>
 
         {/* Mini preview */}
@@ -245,7 +251,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleFavorite}
-            className={`p-1.5 transition-colors ${isFavorited ? 'text-red-400' : isDark ? 'text-gray-600 hover:text-red-400' : 'text-gray-400 hover:text-red-400'}`}
+            className={`p-1.5 transition-colors ${isFavorited ? 'text-red-400' : isDark ? 'text-gray-600 hover:text-red-400' : 'text-gray-400 hover:text-red-400'} ${heartAnimating ? 'heart-pop' : ''}`}
             aria-label={`Favorite ${effect.name}`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
@@ -274,7 +280,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
       onClick={() => setSelectedEffectId(effect.id)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow ${
+      className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow card-shine ${
         isFocused ? 'effect-card-focused border-emerald-500/40' : ''
       } ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200 shadow-sm'}`}
       style={{
@@ -342,13 +348,13 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             </span>
           </motion.div>
 
-          {/* Favorite button - top right */}
+          {/* Favorite button - top right with heart pop */}
           <motion.button
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
             transition={{ duration: 0.15 }}
             onClick={handleFavorite}
-            className={`absolute top-2 right-2 z-20 p-1.5 rounded-lg backdrop-blur-sm transition-colors ${
+            className={`absolute top-2 right-2 z-20 p-1.5 rounded-lg backdrop-blur-sm transition-colors ${heartAnimating ? 'heart-pop' : ''} ${
               isFavorited
                 ? 'bg-red-500/20 text-red-400'
                 : 'bg-black/40 text-gray-400 hover:text-red-400'
@@ -358,7 +364,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
           </motion.button>
 
-          {/* Compare button - top left */}
+          {/* Compare button - top left with checkmark draw */}
           <motion.button
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
@@ -371,7 +377,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             }`}
             aria-label={`Compare ${effect.name}`}
           >
-            <GitCompare className="w-3.5 h-3.5" />
+            <GitCompare className={`w-3.5 h-3.5 ${checkAnimating ? 'checkmark-draw' : ''}`} />
           </motion.button>
         </div>
 

@@ -4,7 +4,7 @@ import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -46,12 +46,16 @@ function addLineNumbers(code: string, isDark: boolean): string {
 
 // Inner modal content - resets via key when effect changes
 function ModalContent({ effect }: { effect: CSSEffect }) {
-  const { setSelectedEffectId, theme } = useEffectsStore();
-  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html'>('preview');
+  const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss } = useEffectsStore();
+  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const playgroundPreviewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const playgroundStyleRef = useRef<HTMLStyleElement | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDark = theme === 'dark';
 
   const injectPreview = useCallback(() => {
@@ -132,6 +136,85 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
     previewRef.current.innerHTML = modifiedHtml;
   }, [effect]);
 
+  // Inject playground preview with modified CSS
+  const injectPlaygroundPreview = useCallback((cssToUse: string) => {
+    if (!effect || !playgroundPreviewRef.current) return;
+
+    const uniquePrefix = `playground-${effect.id}-`;
+    let modifiedCss = cssToUse;
+
+    const classMatches = cssToUse.match(/\.([a-zA-Z0-9_-]+)/g);
+    if (classMatches) {
+      const uniqueClasses = new Set<string>();
+      classMatches.forEach((match) => {
+        const className = match.substring(1);
+        if (!uniqueClasses.has(className)) {
+          uniqueClasses.add(className);
+          const regex = new RegExp(`\\.${className}(?=[\\s{,:])`, 'g');
+          modifiedCss = modifiedCss.replace(regex, `.${uniquePrefix}${className}`);
+        }
+      });
+    }
+
+    const animMatches = modifiedCss.match(/@keyframes\s+([a-zA-Z0-9_-]+)/g);
+    if (animMatches) {
+      animMatches.forEach((match) => {
+        const animName = match.replace('@keyframes ', '');
+        const uniqueAnimName = `${uniquePrefix}${animName}`;
+        modifiedCss = modifiedCss.replace(
+          new RegExp(`@keyframes\\s+${animName}`, 'g'),
+          `@keyframes ${uniqueAnimName}`
+        );
+        modifiedCss = modifiedCss.replace(
+          new RegExp(`animation:\\s*([^}]*?)${animName}`, 'g'),
+          `animation: $1${uniqueAnimName}`
+        );
+        modifiedCss = modifiedCss.replace(
+          new RegExp(`animation-name:\\s*${animName}`, 'g'),
+          `animation-name: ${uniqueAnimName}`
+        );
+      });
+    }
+
+    if (playgroundStyleRef.current) {
+      playgroundStyleRef.current.remove();
+    }
+
+    const style = document.createElement('style');
+    style.textContent = modifiedCss;
+    document.head.appendChild(style);
+    playgroundStyleRef.current = style;
+
+    let modifiedHtml = effect.htmlCode;
+    if (classMatches) {
+      const uniqueClasses = new Set<string>();
+      classMatches.forEach((match) => {
+        const className = match.substring(1);
+        if (!uniqueClasses.has(className)) {
+          uniqueClasses.add(className);
+          modifiedHtml = modifiedHtml.replace(
+            new RegExp(`class="${className}"`, 'g'),
+            `class="${uniquePrefix}${className}"`
+          );
+          modifiedHtml = modifiedHtml.replace(
+            new RegExp(`class="${className} `, 'g'),
+            `class="${uniquePrefix}${className} `
+          );
+          modifiedHtml = modifiedHtml.replace(
+            new RegExp(` ${className}"`, 'g'),
+            ` ${uniquePrefix}${className}"`
+          );
+          modifiedHtml = modifiedHtml.replace(
+            new RegExp(` ${className} `, 'g'),
+            ` ${uniquePrefix}${className} `
+          );
+        }
+      });
+    }
+
+    playgroundPreviewRef.current.innerHTML = modifiedHtml;
+  }, [effect]);
+
   useEffect(() => {
     if (effect && activeTab === 'preview') {
       const timer = setTimeout(injectPreview, 100);
@@ -145,19 +228,56 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
     };
   }, [effect, activeTab, injectPreview]);
 
+  // Playground preview - debounced update
+  useEffect(() => {
+    if (activeTab !== 'playground') return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      const cssToUse = playgroundCss || effect.cssCode;
+      injectPlaygroundPreview(cssToUse);
+    }, 300);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (playgroundStyleRef.current) {
+        playgroundStyleRef.current.remove();
+        playgroundStyleRef.current = null;
+      }
+    };
+  }, [playgroundCss, activeTab, effect, injectPlaygroundPreview]);
+
+  // Initialize playground CSS when switching to playground tab
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      resetPlaygroundCss();
+      setSelectedEffectId(null);
+    }, 200);
+  }, [resetPlaygroundCss, setSelectedEffectId]);
+
+  useEffect(() => {
+    if (activeTab === 'playground' && !playgroundCss) {
+      setPlaygroundCss(effect.cssCode);
+    }
+  }, [activeTab, effect.cssCode, playgroundCss, setPlaygroundCss]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isFullscreen) {
           setIsFullscreen(false);
         } else {
-          setSelectedEffectId(null);
+          handleClose();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setSelectedEffectId, isFullscreen]);
+  }, [isFullscreen, handleClose]);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -224,6 +344,19 @@ ${effect.cssCode}
     toast.success('CSS file exported!', { duration: 2000 });
   };
 
+  const handlePlaygroundReset = () => {
+    setPlaygroundCss(effect.cssCode);
+    toast.success('CSS reset to original', { duration: 1500 });
+  };
+
+  const handleCopyModified = () => {
+    const cssToCopy = playgroundCss || effect.cssCode;
+    navigator.clipboard.writeText(cssToCopy);
+    setCopied('playground');
+    toast.success('Modified CSS copied to clipboard!', { duration: 2000 });
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   const difficultyColors = {
     beginner: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
     intermediate: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
@@ -234,26 +367,31 @@ ${effect.cssCode}
     { id: 'preview' as const, label: 'Preview', icon: Eye },
     { id: 'css' as const, label: 'CSS', icon: Code2 },
     { id: 'html' as const, label: 'HTML', icon: FileCode },
+    { id: 'playground' as const, label: 'Playground', icon: Terminal },
   ];
 
   return (
     <>
-      {/* Backdrop with blur animation */}
+      {/* Backdrop with zoom blur effect */}
       <motion.div
-        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
-        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+        initial={{ opacity: 0, backdropFilter: 'blur(0px) brightness(1)' }}
+        animate={{ opacity: 1, backdropFilter: isClosing ? 'blur(0px) brightness(1)' : 'blur(8px) brightness(0.95)' }}
+        exit={{ opacity: 0, backdropFilter: 'blur(0px) brightness(1)' }}
         transition={{ duration: 0.3 }}
         className="fixed inset-0 bg-black/70 z-50"
-        onClick={() => setSelectedEffectId(null)}
+        onClick={handleClose}
       />
 
-      {/* Modal with glass morphism */}
+      {/* Modal with glass morphism and staggered reveal */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        animate={{
+          opacity: isClosing ? 0 : 1,
+          scale: isClosing ? 0.94 : 1,
+          y: isClosing ? 10 : 0,
+        }}
+        exit={{ opacity: 0, scale: 0.94, y: 10 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300, duration: isClosing ? 0.2 : undefined }}
         className={`fixed z-50 overflow-hidden flex flex-col glass-modal rounded-2xl ${
           isFullscreen
             ? 'inset-2'
@@ -273,8 +411,8 @@ ${effect.cssCode}
         </div>
 
         <div className={`relative flex flex-col h-full rounded-2xl overflow-hidden ${isDark ? 'bg-[#0f0f1a]' : 'bg-white/95'}`}>
-          {/* Header */}
-          <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+          {/* Header - staggered reveal */}
+          <div className={`flex items-center justify-between px-6 py-4 border-b modal-stagger-header ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
             <div>
               <div className="flex items-center gap-3">
                 <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{effect.name}</h2>
@@ -342,7 +480,7 @@ ${effect.cssCode}
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button
-                onClick={() => setSelectedEffectId(null)}
+                onClick={handleClose}
                 className={`p-2 rounded-lg transition-all ${
                   isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                 }`}
@@ -353,8 +491,8 @@ ${effect.cssCode}
             </div>
           </div>
 
-          {/* Tabs with icons */}
-          <div className={`flex border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+          {/* Tabs with icons - staggered reveal */}
+          <div className={`flex border-b modal-stagger-tabs ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
             {tabConfig.map((tab) => (
               <button
                 key={tab.id}
@@ -371,8 +509,8 @@ ${effect.cssCode}
             ))}
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-auto custom-scrollbar">
+          {/* Content - staggered reveal */}
+          <div className="flex-1 overflow-auto custom-scrollbar modal-stagger-content">
             {activeTab === 'preview' && (
               <div className={`flex items-center justify-center p-10 relative ${
                 isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
@@ -418,6 +556,78 @@ ${effect.cssCode}
                 <pre className={`p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 ${isDark ? 'bg-[#0a0a0a] text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
                   <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')), isDark) }} />
                 </pre>
+              </div>
+            )}
+
+            {activeTab === 'playground' && (
+              <div className="flex flex-col lg:flex-row h-full min-h-[400px]">
+                {/* Left: Code editor */}
+                <div className="w-full lg:w-1/2 flex flex-col border-r border-gray-800/30">
+                  <div className={`flex items-center justify-between px-4 py-2 border-b ${isDark ? 'border-gray-800/50 bg-[#0d1117]' : 'border-gray-200 bg-gray-50'}`}>
+                    <span className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <Terminal className="w-3 h-3" />
+                      CSS Editor
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handlePlaygroundReset}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border transition-all bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                        aria-label="Reset CSS to original"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        Reset
+                      </button>
+                      <button
+                        onClick={handleCopyModified}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border transition-all bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                        aria-label="Copy modified CSS"
+                      >
+                        {copied === 'playground' ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        {copied === 'playground' ? 'Copied!' : 'Copy Modified'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex-1 relative">
+                    {/* Line numbers background */}
+                    <div className="absolute inset-0 flex">
+                      <div className={`w-10 shrink-0 py-4 text-right pr-2 text-[13px] leading-[1.6] font-mono select-none ${isDark ? 'bg-[#0d1117] text-gray-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {(playgroundCss || effect.cssCode).split('\n').map((_, i) => (
+                          <div key={i}>{i + 1}</div>
+                        ))}
+                      </div>
+                      <textarea
+                        value={playgroundCss || effect.cssCode}
+                        onChange={(e) => setPlaygroundCss(e.target.value)}
+                        className="playground-textarea flex-1 border-0 rounded-none"
+                        spellCheck={false}
+                        aria-label="CSS code editor"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Right: Live preview */}
+                <div className={`w-full lg:w-1/2 flex flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
+                  <div className={`flex items-center px-4 py-2 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                    <span className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <Eye className="w-3 h-3" />
+                      Live Preview
+                    </span>
+                    <span className={`ml-2 text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Auto-updates as you type (300ms delay)
+                    </span>
+                  </div>
+                  <div className="flex-1 flex items-center justify-center p-10 relative">
+                    <div className="absolute inset-0 opacity-[0.03]"
+                      style={{
+                        backgroundImage: isDark
+                          ? 'radial-gradient(circle, #fff 1px, transparent 1px)'
+                          : 'radial-gradient(circle, #000 1px, transparent 1px)',
+                        backgroundSize: '16px 16px',
+                      }}
+                    />
+                    <div ref={playgroundPreviewRef} className="relative z-10 transform scale-110" />
+                  </div>
+                </div>
               </div>
             )}
           </div>

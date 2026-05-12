@@ -1,12 +1,157 @@
 'use client';
 
-import { useEffectsStore } from '@/lib/effects-store';
+import { useEffectsStore, featuredEffectIds } from '@/lib/effects-store';
 import { getTagCounts, effects, collections } from '@/lib/effects-data';
 import type { Difficulty } from '@/lib/effects-data';
-import { LayoutGrid, List, Shuffle, Keyboard, X } from 'lucide-react';
-import { useMemo } from 'react';
+import { LayoutGrid, List, Shuffle, Keyboard, X, Download, FileDown, Heart, GitCompare } from 'lucide-react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+
+// Batch export: generate HTML file with multiple effects
+function generateBatchHTML(effectIds: string[], title: string): string {
+  const selectedEffects = effects.filter((e) => effectIds.includes(e.id));
+
+  const effectsHTML = selectedEffects.map((effect) => `
+    <div class="effect-item">
+      <div class="effect-header">
+        <h3>${effect.name}</h3>
+        <span class="difficulty ${effect.difficulty}">${effect.difficulty}</span>
+      </div>
+      <p class="description">${effect.description}</p>
+      <div class="preview-container">
+        <style>${effect.cssCode}</style>
+        ${effect.htmlCode}
+      </div>
+      <details>
+        <summary>CSS Code</summary>
+        <pre><code>${effect.cssCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+      </details>
+      <details>
+        <summary>HTML Code</summary>
+        <pre><code>${effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+      </details>
+    </div>
+  `).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+    .effects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .effect-item {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .effect-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .effect-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #e5e5e5;
+    }
+    .difficulty {
+      font-size: 0.625rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 500;
+    }
+    .difficulty.beginner { background: rgba(16,185,129,0.15); color: #34d399; }
+    .difficulty.intermediate { background: rgba(234,179,8,0.15); color: #fbbf24; }
+    .difficulty.advanced { background: rgba(239,68,68,0.15); color: #f87171; }
+    .description {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    .preview-container {
+      background: #0a0a0a;
+      border-radius: 8px;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      margin-bottom: 1rem;
+    }
+    details {
+      margin-top: 0.5rem;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #10b981;
+      padding: 0.25rem 0;
+    }
+    pre {
+      background: #0a0a0a;
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: #9ca3af;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  <p class="subtitle">${selectedEffects.length} CSS effects from CSS Effects Library</p>
+  <div class="effects-grid">
+    ${effectsHTML}
+  </div>
+</body>
+</html>`;
+}
+
+function doDownload(htmlContent: string, filename: string) {
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function FilterToolbar() {
   const {
@@ -24,13 +169,29 @@ export function FilterToolbar() {
     setSelectedEffectId,
     clearAllFilters,
     visibleCount,
-    loadMore,
-    showAll,
     theme,
+    favorites,
+    compareIds,
+    selectedFeatured,
   } = useEffectsStore();
 
   const isDark = theme === 'dark';
   const tagCounts = useMemo(() => getTagCounts(), []);
+  const [showBatchMenu, setShowBatchMenu] = useState(false);
+  const batchMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close batch menu on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (batchMenuRef.current && !batchMenuRef.current.contains(e.target as Node)) {
+        setShowBatchMenu(false);
+      }
+    };
+    if (showBatchMenu) {
+      document.addEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showBatchMenu]);
 
   // Calculate filtered count
   const filteredCount = useMemo(() => {
@@ -43,6 +204,8 @@ export function FilterToolbar() {
     if (selectedCollection === 'favorites') {
       const favs = useEffectsStore.getState().favorites;
       filtered = filtered.filter((e) => favs.includes(e.id));
+    } else if (selectedCollection === 'featured') {
+      filtered = filtered.filter((e) => featuredEffectIds.includes(e.id));
     } else if (selectedCollection) {
       const col = collections.find((c) => c.id === selectedCollection);
       if (col) {
@@ -74,7 +237,50 @@ export function FilterToolbar() {
     return filtered.length;
   }, [selectedCategory, selectedCollection, selectedDifficulty, selectedTags, searchQuery]);
 
-  const hasActiveFilters = selectedCategory !== 'all' || selectedDifficulty !== 'all' || selectedTags.length > 0 || selectedCollection !== null || searchQuery.trim() !== '';
+  // Get visible effect IDs for batch export
+  const getVisibleEffectIds = useMemo(() => {
+    let filtered = effects;
+
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter((e) => e.category === selectedCategory);
+    }
+
+    if (selectedCollection === 'favorites') {
+      filtered = filtered.filter((e) => favorites.includes(e.id));
+    } else if (selectedCollection === 'featured') {
+      filtered = filtered.filter((e) => featuredEffectIds.includes(e.id));
+    } else if (selectedCollection) {
+      const col = collections.find((c) => c.id === selectedCollection);
+      if (col) {
+        filtered = filtered.filter((e) => col.effectIds.includes(e.id));
+      }
+    }
+
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter((e) => e.difficulty === selectedDifficulty);
+    }
+
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((e) =>
+        selectedTags.some((tag) => e.tags.includes(tag))
+      );
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.tags.some((t) => t.toLowerCase().includes(q)) ||
+          e.category.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q)
+      );
+    }
+
+    return filtered.map((e) => e.id);
+  }, [selectedCategory, selectedCollection, selectedDifficulty, selectedTags, searchQuery, favorites]);
+
+  const hasActiveFilters = selectedCategory !== 'all' || selectedDifficulty !== 'all' || selectedTags.length > 0 || selectedCollection !== null || searchQuery.trim() !== '' || selectedFeatured;
 
   const difficulties: { value: Difficulty | 'all'; label: string; emoji: string; glowColor: string }[] = [
     { value: 'all', label: 'All Levels', emoji: '', glowColor: '' },
@@ -99,6 +305,36 @@ export function FilterToolbar() {
     toast('All filters cleared', { duration: 1500 });
   };
 
+  const handleBatchExport = (type: 'visible' | 'favorites' | 'compared') => {
+    let ids: string[] = [];
+    let title = '';
+
+    switch (type) {
+      case 'visible':
+        ids = getVisibleEffectIds;
+        title = `CSS Effects - ${ids.length} Effects`;
+        break;
+      case 'favorites':
+        ids = favorites;
+        title = `CSS Effects - Favorites (${ids.length})`;
+        break;
+      case 'compared':
+        ids = compareIds;
+        title = `CSS Effects - Compared (${ids.length})`;
+        break;
+    }
+
+    if (ids.length === 0) {
+      toast('No effects to export', { duration: 2000 });
+      return;
+    }
+
+    const html = generateBatchHTML(ids, title);
+    doDownload(html, `css-effects-${type}.html`);
+    toast.success(`Exported ${ids.length} effects!`, { duration: 2000 });
+    setShowBatchMenu(false);
+  };
+
   // Active filter chips data
   const activeFilters: { label: string; onClear: () => void }[] = [];
   if (selectedCategory !== 'all') {
@@ -107,12 +343,20 @@ export function FilterToolbar() {
       onClear: () => useEffectsStore.getState().setSelectedCategory('all'),
     });
   }
+  if (selectedFeatured) {
+    activeFilters.push({
+      label: '⭐ Featured',
+      onClear: () => useEffectsStore.getState().setSelectedFeatured(false),
+    });
+  }
   if (selectedCollection) {
     if (selectedCollection === 'favorites') {
       activeFilters.push({
         label: 'Favorites',
         onClear: () => useEffectsStore.getState().setSelectedCollection(null),
-    });
+      });
+    } else if (selectedCollection === 'featured') {
+      // Already handled by selectedFeatured above
     } else {
       const col = collections.find((c) => c.id === selectedCollection);
       if (col) {
@@ -171,6 +415,82 @@ export function FilterToolbar() {
           <Shuffle className="w-3 h-3" />
           Surprise me
         </button>
+
+        {/* Batch Export Button */}
+        <div className="relative" ref={batchMenuRef}>
+          <button
+            onClick={() => setShowBatchMenu(!showBatchMenu)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg transition-all ${
+              isDark
+                ? 'bg-[#111] border-gray-800 text-gray-400 hover:text-emerald-400 hover:border-emerald-500/30'
+                : 'bg-gray-50 border-gray-200 text-gray-500 hover:text-emerald-600 hover:border-emerald-500/40'
+            }`}
+            aria-label="Batch export effects"
+          >
+            <Download className="w-3 h-3" />
+            Batch Export
+          </button>
+
+          <AnimatePresence>
+            {showBatchMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute right-0 top-full mt-1 w-64 rounded-xl border shadow-lg z-50 overflow-hidden ${
+                  isDark
+                    ? 'bg-[#111] border-gray-800 shadow-black/40'
+                    : 'bg-white border-gray-200 shadow-gray-200/60'
+                }`}
+              >
+                <div className={`px-3 py-2 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Export Options
+                  </span>
+                </div>
+                <div className="py-1">
+                  <button
+                    onClick={() => handleBatchExport('visible')}
+                    className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 transition-colors ${
+                      isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-medium">Export All Visible</div>
+                      <div className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{getVisibleEffectIds.length} effects as HTML</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleBatchExport('favorites')}
+                    className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 transition-colors ${
+                      isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Heart className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    <div>
+                      <div className="font-medium">Export Favorites</div>
+                      <div className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{favorites.length} favorited effects</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleBatchExport('compared')}
+                    className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 transition-colors ${
+                      isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <GitCompare className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <div>
+                      <div className="font-medium">Export Compared</div>
+                      <div className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{compareIds.length} compared effects</div>
+                    </div>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Size slider */}
         <div className="hidden sm:flex items-center gap-2">
@@ -291,26 +611,11 @@ export function FilterToolbar() {
         </div>
       </div>
 
-      {/* Load More / Show All pagination */}
+      {/* Pagination info only - buttons are at bottom of grid in page.tsx */}
       {visibleCount < filteredCount && (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <button
-            onClick={loadMore}
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all"
-          >
-            Load More (+24)
-          </button>
-          <button
-            onClick={showAll}
-            className={`flex items-center gap-2 px-6 py-2.5 border rounded-xl text-sm font-medium transition-all ${
-              isDark
-                ? 'bg-[#111] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
-                : 'bg-gray-50 border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Show All ({filteredCount})
-          </button>
-        </div>
+        <p className={`text-center text-xs pt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+          Scroll down for more effects ↓
+        </p>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import { FilterToolbar } from '@/components/css-effects/filter-toolbar';
 import { EffectCard } from '@/components/css-effects/effect-card';
 import { EffectDetailModal } from '@/components/css-effects/effect-detail-modal';
 import { Footer } from '@/components/css-effects/footer';
-import { useEffectsStore } from '@/lib/effects-store';
+import { useEffectsStore, featuredEffectIds } from '@/lib/effects-store';
 import { effects, collections } from '@/lib/effects-data';
 import { Menu, ArrowUp, GitCompare, X, SearchX, RotateCcw, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -244,6 +244,38 @@ function ScrollToTop() {
   );
 }
 
+// Scroll Progress Indicator
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setProgress(scrollPercent);
+      setVisible(scrollTop > 0);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="scroll-progress"
+      style={{ width: `${progress}%`, opacity: visible ? 1 : 0 }}
+      role="progressbar"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Page scroll progress"
+    />
+  );
+}
+
 // Enhanced empty state component
 function EmptyState() {
   const { clearAllFilters, setSelectedCategory, setSearchQuery, theme } = useEffectsStore();
@@ -343,6 +375,7 @@ export default function HomePage() {
     visibleCount,
     setVisibleCount,
     theme,
+    selectedFeatured,
   } = useEffectsStore();
 
   const isDark = theme === 'dark';
@@ -358,6 +391,8 @@ export default function HomePage() {
     if (selectedCollection === 'favorites') {
       const favs = useEffectsStore.getState().favorites;
       filtered = filtered.filter((e) => favs.includes(e.id));
+    } else if (selectedCollection === 'featured' || selectedFeatured) {
+      filtered = filtered.filter((e) => featuredEffectIds.includes(e.id));
     } else if (selectedCollection) {
       const col = collections.find((c) => c.id === selectedCollection);
       if (col) {
@@ -387,7 +422,7 @@ export default function HomePage() {
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured]);
 
   // Apply pagination - slice the visible effects
   const visibleEffects = useMemo(() => {
@@ -416,7 +451,7 @@ export default function HomePage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(24);
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, setVisibleCount]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, setVisibleCount]);
 
   // URL hash handling for effect sharing
   useEffect(() => {
@@ -486,14 +521,17 @@ export default function HomePage() {
   // Reset focused index when filters change
   useEffect(() => {
     setFocusedEffectIndex(null);
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, setFocusedEffectIndex]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, setFocusedEffectIndex]);
 
   return (
-    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`min-h-screen flex flex-col animated-bg ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       {/* Skip navigation link */}
       <a href="#main-content" className="skip-nav">
         Skip to main content
       </a>
+
+      {/* Scroll Progress Indicator */}
+      <ScrollProgress />
 
       {/* Top section: Header with glass morphism */}
       <header className={`w-full border-b sticky top-0 z-30 glass ${isDark ? 'border-gray-800/30' : 'border-gray-200/60'}`}>

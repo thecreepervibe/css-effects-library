@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import type { Difficulty } from './effects-data';
 
+// Featured effect IDs - hand-picked visually impressive effects
+export const featuredEffectIds: string[] = [
+  'aurora-bg',
+  'gradient-mesh',
+  'neon-glow-text',
+  'floating-particles',
+  'glassmorphism-card',
+  '3d-text',
+  'confetti',
+  'matrix-rain',
+  'rain-effect',
+  'lightning',
+  'gradient-border-card',
+  'flip-card',
+];
+
 interface EffectsStore {
   // Search
   searchQuery: string;
@@ -83,6 +99,16 @@ interface EffectsStore {
   setVisibleCount: (count: number) => void;
   loadMore: () => void;
   showAll: () => void;
+
+  // Featured collection
+  selectedFeatured: boolean;
+  setSelectedFeatured: (val: boolean) => void;
+  toggleSelectedFeatured: () => void;
+
+  // Playground CSS (for the code editor in detail modal)
+  playgroundCss: string;
+  setPlaygroundCss: (css: string) => void;
+  resetPlaygroundCss: () => void;
 }
 
 function loadFromLocalStorage<T>(key: string, fallback: T): T {
@@ -109,7 +135,7 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   selectedCategory: 'all',
-  setSelectedCategory: (category) => set({ selectedCategory: category, selectedCollection: null }),
+  setSelectedCategory: (category) => set({ selectedCategory: category, selectedCollection: null, selectedFeatured: false }),
 
   selectedDifficulty: 'all',
   setSelectedDifficulty: (difficulty) => set({ selectedDifficulty: difficulty }),
@@ -128,6 +154,7 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
     selectedTags: [],
     selectedCollection: null,
     searchQuery: '',
+    selectedFeatured: false,
   }),
 
   viewMode: 'grid',
@@ -148,7 +175,7 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   selectedCollection: null,
-  setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all' } : { selectedCollection: null }),
+  setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all', selectedFeatured: false } : { selectedCollection: null }),
 
   // Favorites - initialize empty to avoid hydration mismatch, hydrate from localStorage in useEffect
   favorites: [],
@@ -255,4 +282,25 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   setVisibleCount: (count) => set({ visibleCount: count }),
   loadMore: () => set((state) => ({ visibleCount: state.visibleCount + 24 })),
   showAll: () => set({ visibleCount: 9999 }),
+
+  // Featured collection
+  selectedFeatured: false,
+  setSelectedFeatured: (val) => set({
+    selectedFeatured: val,
+    selectedCollection: val ? 'featured' : null,
+    selectedCategory: 'all',
+  }),
+  toggleSelectedFeatured: () => {
+    const current = get().selectedFeatured;
+    set({
+      selectedFeatured: !current,
+      selectedCollection: !current ? 'featured' : null,
+      selectedCategory: 'all',
+    });
+  },
+
+  // Playground CSS
+  playgroundCss: '',
+  setPlaygroundCss: (css) => set({ playgroundCss: css }),
+  resetPlaygroundCss: () => set({ playgroundCss: '' }),
 }));

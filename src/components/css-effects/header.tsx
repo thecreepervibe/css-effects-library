@@ -187,7 +187,7 @@ export function Header() {
 
           {/* Search History Dropdown */}
           <AnimatePresence>
-            {showHistory && searchHistory.length > 0 && !searchQuery.trim() && (
+            {showHistory && !searchQuery.trim() && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -204,34 +204,51 @@ export function Header() {
                     <Clock className="w-3 h-3" />
                     Recent Searches
                   </span>
-                  <button
-                    onClick={clearSearchHistory}
-                    className={`text-[10px] font-medium flex items-center gap-0.5 transition-colors ${
-                      isDark ? 'text-red-400/60 hover:text-red-400' : 'text-red-500/60 hover:text-red-500'
-                    }`}
-                    aria-label="Clear search history"
-                  >
-                    <Trash2 className="w-2.5 h-2.5" />
-                    Clear
-                  </button>
-                </div>
-                <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                  {searchHistory.map((query, i) => (
+                  {searchHistory.length > 0 && (
                     <button
-                      key={`${query}-${i}`}
-                      onClick={() => handleHistoryClick(query)}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
-                        isDark
-                          ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                      onClick={clearSearchHistory}
+                      className={`text-[10px] font-medium flex items-center gap-0.5 transition-colors ${
+                        isDark ? 'text-red-400/60 hover:text-red-400' : 'text-red-500/60 hover:text-red-500'
                       }`}
+                      aria-label="Clear search history"
                     >
-                      <Clock className="w-3 h-3 shrink-0 opacity-40" />
-                      <span className="truncate">{query}</span>
-                      <X className={`w-2.5 h-2.5 ml-auto opacity-0 group-hover:opacity-100 shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                      <Trash2 className="w-2.5 h-2.5" />
+                      Clear
                     </button>
-                  ))}
+                  )}
                 </div>
+                {searchHistory.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                    {searchHistory.map((query, i) => (
+                      <button
+                        key={`${query}-${i}`}
+                        onClick={() => handleHistoryClick(query)}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                          isDark
+                            ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                        }`}
+                      >
+                        <Clock className="w-3 h-3 shrink-0 opacity-40" />
+                        <span className="truncate">{query}</span>
+                        <X className={`w-2.5 h-2.5 ml-auto opacity-0 group-hover:opacity-100 shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  /* Empty state for search history */
+                  <div className="px-4 py-6 text-center">
+                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/5 border border-emerald-500/10 mb-3">
+                      <Clock className={`w-5 h-5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+                    </div>
+                    <p className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Your search history will appear here
+                    </p>
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+                      Start typing to search for effects
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
