@@ -14,6 +14,11 @@ import { effectsNewBatch2 } from './effects-new-batch-2';
 import { effectsNewBatch3 } from './effects-new-batch-3';
 import { effectsNewBatch4 } from './effects-new-batch-4';
 import { effectsNewBatch5 } from './effects-new-batch-5';
+import { effectsNewBatch6 } from './effects-new-batch-6';
+import { effectsNewBatch7 } from './effects-new-batch-7';
+import { effectsNewBatch8 } from './effects-new-batch-8';
+import { effectsNewBatch9 } from './effects-new-batch-9';
+import { effectsNewBatch10 } from './effects-new-batch-10';
 
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -5645,6 +5650,11 @@ const allBatchEffects: CSSEffect[] = [
   ...effectsNewBatch3,
   ...effectsNewBatch4,
   ...effectsNewBatch5,
+  ...effectsNewBatch6,
+  ...effectsNewBatch7,
+  ...effectsNewBatch8,
+  ...effectsNewBatch9,
+  ...effectsNewBatch10,
 ];
 
 // Push batch effects into the existing exported array so all references stay valid
