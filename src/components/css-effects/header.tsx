@@ -280,7 +280,6 @@ export function Header() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const headerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark';
@@ -288,15 +287,6 @@ export function Header() {
   // Detect platform for shortcut hint
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
   const shortcutHint = isMac ? '⌘K' : 'Ctrl+K';
-
-  // Parallax scrolling effect for header
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const typingPhrases = useMemo(() => [
     'A curated collection of beautiful CSS effects',
@@ -446,8 +436,7 @@ export function Header() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="text-center mb-6 relative header-parallax"
-      style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+      className="text-center mb-6 relative"
     >
       {/* Particle background */}
       <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40">
