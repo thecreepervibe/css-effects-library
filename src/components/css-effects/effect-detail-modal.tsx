@@ -2,9 +2,9 @@
 
 import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
-import { useEffectsStore } from '@/lib/effects-store';
+import { useEffectsStore, getEffectViews } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, Eye as EyeIcon } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -51,6 +51,7 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [tabKey, setTabKey] = useState(0);
   const previewRef = useRef<HTMLDivElement>(null);
   const playgroundPreviewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
@@ -363,6 +364,12 @@ ${effect.cssCode}
     advanced: 'bg-red-500/15 text-red-400 border-red-500/20',
   };
 
+  const viewCount = getEffectViews(effect.id);
+  const formatViews = (count: number): string => {
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
+  };
+
   const tabConfig = [
     { id: 'preview' as const, label: 'Preview', icon: Eye },
     { id: 'css' as const, label: 'CSS', icon: Code2 },
@@ -420,10 +427,14 @@ ${effect.cssCode}
                   {effect.difficulty}
                 </span>
                 {effect.isNew && (
-                  <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
+                  <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded new-badge-pulse">
                     NEW
                   </span>
                 )}
+                <span className={`text-[10px] flex items-center gap-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <EyeIcon className="w-3 h-3" />
+                  {formatViews(viewCount)} views
+                </span>
               </div>
               <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
             </div>
@@ -496,7 +507,7 @@ ${effect.cssCode}
             {tabConfig.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setTabKey(prev => prev + 1); }}
                 className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? 'text-emerald-400 border-b-2 border-emerald-400'
@@ -509,8 +520,8 @@ ${effect.cssCode}
             ))}
           </div>
 
-          {/* Content - staggered reveal */}
-          <div className="flex-1 overflow-auto custom-scrollbar modal-stagger-content">
+          {/* Content - staggered reveal with tab animation */}
+          <div className="flex-1 overflow-auto custom-scrollbar modal-stagger-content tab-scale-in" key={tabKey}>
             {activeTab === 'preview' && (
               <div className={`flex items-center justify-center p-10 relative ${
                 isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
@@ -567,6 +578,7 @@ ${effect.cssCode}
                     <span className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       <Terminal className="w-3 h-3" />
                       CSS Editor
+                      <span className="playground-cursor" />
                     </span>
                     <div className="flex items-center gap-2">
                       <button

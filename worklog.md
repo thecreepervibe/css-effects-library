@@ -524,3 +524,182 @@ Task: Add Live CSS Playground, Featured Collection, Batch Export, and extensive 
 - No changes to effects-data.ts
 - TypeScript strict typing throughout
 - All new features properly integrated with existing store and components
+
+---
+Task ID: 9 (Cron Review Round 5)
+Agent: full-stack-developer
+Task: Fix bugs, enhance styling, and add new features
+
+Work Log:
+
+## Bug Fixes
+
+### Bug 1: Remove Debug Console Logs
+- Searched entire codebase for `[DEBUG]` and `console.log` statements
+- No debug console.log statements found - already clean from previous rounds
+
+### Bug 2: Keyboard Shortcuts Button Does Nothing
+- The Keyboard shortcuts button in filter-toolbar.tsx only had a `title` tooltip, no onClick handler
+- Created `KeyboardShortcutsDialog` component with full keyboard shortcut overlay
+- Dialog shows shortcuts in visually appealing layout with key badges: / (focus search), ↑↓ (navigate), Enter (open detail), Esc (close), ←→ (navigate)
+- Added `keyboardShortcutsOpen` and `setKeyboardShortcutsOpen` to Zustand store
+- Button now calls `setKeyboardShortcutsOpen(true)` on click
+- Dialog closes on Escape key, clicking outside, or X button
+- Proper ARIA attributes: role="dialog", aria-modal="true", aria-label
+
+### Bug 3: Show All Button May Not Work
+- Analyzed interaction between `showAll()` (sets visibleCount: 9999) and useEffect that resets visibleCount to 24
+- The useEffect depends on filter values (searchQuery, selectedCategory, etc.), NOT on visibleCount
+- Clicking "Show All" doesn't change any filter, so useEffect doesn't re-fire
+- No conflict exists - works correctly as designed
+
+### Bug 4: Favorites Heart Visual Toggle
+- Verified component subscribes to `favorites` via `const { ..., favorites, ... } = useEffectsStore()`
+- Zustand creates new array reference when favorites changes (via spread operator in toggleFavorite)
+- This properly triggers React re-renders when favorites changes
+- isFavorited correctly recalculates via `favorites.includes(effect.id)`
+- Working as expected
+
+## MANDATORY STYLING IMPROVEMENTS
+
+### 1. Enhanced Card Visual Design
+- Added gradient overlay at bottom of preview area for better text readability
+- Category tag has colored left border matching difficulty level
+- NEW badge has subtle pulse animation
+- Copy Code button uses polished gradient background
+
+### 2. Better Typography & Spacing
+- "Effects" word in header is larger than "CSS" and "Library"
+- Stat pills have gradient backgrounds
+- Subtitle text has letter-spacing
+- Better spacing between description and search bar
+
+### 3. Enhanced Sidebar Visual Design
+- Added colored dot indicator next to each category based on deterministic color
+- "All Effects" button is more prominent (font-bold, Sparkles icon)
+- Alternating background colors for category items
+- Hover effect with padding change on sidebar items
+
+### 4. Improved Modal Animations
+- Tab switching has scale-up animation (tab-scale-in CSS class)
+- Playground editor has cursor blink animation indicator
+- Content area re-triggers animation on tab switch
+- NEW badge in modal also pulses
+
+### 5. Better Filter Toolbar Design
+- Difficulty filter buttons have bounce animation on click
+- "Clear all" button has RotateCcw icon on left
+- Active difficulty/tag buttons have border-bottom animation
+- Better visual hierarchy with consistent spacing
+
+### 6. Enhanced Footer Design
+- Social links have hover animations (scale + translateY + color change)
+- "Pure CSS, No Dependencies" badge is more prominent
+- Top border has animated gradient
+- Difficulty breakdown labels have tiny icons (Circle, Zap, Flame)
+
+### 7. Better Loading State
+- Skeleton loader now matches actual card layout shape
+- Added shimmer sweep animation on skeleton items
+
+## MANDATORY NEW FEATURES
+
+### 1. Keyboard Shortcuts Dialog
+- Full dialog overlay showing all keyboard shortcuts with key badges
+- Each shortcut has icon, description, and key badges
+- Closes on Escape, clicking outside, or X button
+- Proper ARIA attributes for accessibility
+
+### 2. Code Preview Tooltip on Card Hover
+- Hovering over effect card for 800ms shows tooltip with first 4 lines of CSS code
+- Positioned above the preview area
+- Disappears immediately when mouse leaves
+- Has "CSS Preview" header with Code2 icon
+
+### 3. Color-Coded Category Badges
+- Each category has consistent color via `getCategoryColor(categoryId)` function
+- Uses deterministic hash of category ID to pick from 10-color palette
+- Colors appear as: colored dot in sidebar, colored pill on effect cards
+
+### 4. Improved Search with Auto-suggestions
+- Shows auto-suggestions dropdown below search input when typing
+- Three types of suggestions with distinct icons and colors:
+  - Effects: Sparkles icon, emerald badge
+  - Categories: FolderOpen icon, blue badge
+  - Tags: Tag icon, purple badge
+- Clicking a suggestion applies it (opens effect, selects category, or toggles tag)
+- Max 8 suggestions shown at once
+
+### 5. Effect "Views" Counter (Simulated)
+- Each effect has simulated "views" count via `getEffectViews(effectId)` (50-5000)
+- Views shown on effect cards (overlay and compact view) with Eye icon
+- Views shown in detail modal header
+- Counts >= 1000 shown as "X.Xk"
+
+## Code Quality
+- All lint errors fixed (0 errors, 0 warnings)
+- Fixed AnimatePresence import missing in effect-card.tsx
+- Fixed syntax error (extra `}`) in footer.tsx
+- Fixed useCallback dependency array in header.tsx
+- Dev server compiles successfully (200 status)
+- No changes to effects-data.ts
+
+Stage Summary:
+- All 4 bug fixes completed (or verified as non-issues)
+- All 7 mandatory styling improvements implemented
+- All 5 mandatory new features implemented
+- Keyboard shortcuts dialog fully functional
+- Code preview tooltip on 800ms hover
+- Color-coded category badges throughout sidebar and cards
+- Search auto-suggestions with effect/category/tag types
+- Simulated views counter on all effects
+- Enhanced skeleton loader, footer animations, card polish
+- Lint passes cleanly, dev server returns 200
+
+---
+Task ID: 9b (Cron Review Round 5 - Main Agent Bug Fix)
+Agent: Main Agent (Bug Fix + QA Verification)
+
+Task: Fix critical category filter bug found during QA verification
+
+Work Log:
+- Reviewed worklog from Tasks 1-9
+- Performed QA testing using agent-browser - found category filter bug still present
+- Root cause analysis: `setSelectedFeatured(false)` in the Zustand store was resetting `selectedCategory: 'all'` AND `selectedCollection: null`, which overrode the category set by `setSelectedCategory(categoryId)`
+- In `handleCategoryClick`, the call sequence was:
+  1. `setSelectedCategory('buttons')` → sets selectedCategory to 'buttons' ✓
+  2. `setSelectedCollection(null)` → OK, doesn't override ✓
+  3. `setSelectedFeatured(false)` → **RESETS selectedCategory to 'all' AND selectedCollection to null** ✗ BUG!
+- Fixed by making `setSelectedFeatured(false)` only set `selectedFeatured: false` without resetting other state
+- When `setSelectedFeatured(true)`, it still correctly sets selectedCollection to 'featured' and selectedCategory to 'all'
+- Also fixed duplicate React key warning in keyboard shortcuts dialog:
+  - Two entries had description "Navigate effects" causing duplicate key
+  - Added unique `id` field to each shortcut and changed `key={shortcut.description}` to `key={shortcut.id}`
+  - Changed descriptions to "Navigate effects (vertical)" and "Navigate effects (horizontal)"
+- Verified fix with QA test: Clicking "Buttons" now shows 5 effects, "Text Effects" shows 6 effects
+- Lint passes cleanly
+
+Stage Summary:
+- **Critical category filter bug fixed**: Root cause was `setSelectedFeatured(false)` overriding category state
+- Duplicate React key warning fixed in keyboard shortcuts dialog
+- All features working: search, category filter, difficulty filter, tag filter, random, favorites, compare, recently viewed, featured, keyboard shortcuts dialog
+- Lint passes, dev server returns 200, no runtime errors
+
+Current Project Status:
+- CSS Effects Library is feature-complete with 198 effects across 38 categories
+- All core features working correctly: search, filter, categories, tags, random, modal, copy code, favorites, recently viewed, compare mode, share URL, keyboard navigation, keyboard shortcuts dialog, code preview tooltip, color-coded categories, search auto-suggestions, views counter
+- Professional dark/light theme with emerald accent, responsive design, glass morphism effects
+- Enhanced card designs with gradient overlays, complexity bars, star ratings
+- Full accessibility: skip nav, ARIA labels, keyboard navigation, focus indicators, reduced motion support
+
+Unresolved Issues/Risks:
+- Hydration mismatch possible with localStorage-based state (favorites, recentlyViewed) on SSR
+- Some CSS effect previews might not render perfectly in small card areas
+- The particle animation in header may impact performance on low-end devices
+
+Priority Recommendations for Next Phase:
+- Add drag-and-drop reordering for favorites
+- Implement a "Collections" feature where users can create custom collections
+- Add CSS code minification in the export feature
+- Add a "Dark Mode Preview" toggle that shows how effects look on dark/light backgrounds
+- Consider adding more CSS effects (target: 250+)

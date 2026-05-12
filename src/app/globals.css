@@ -715,7 +715,7 @@ html {
   animation: copy-bounce 0.4s ease-in-out;
 }
 
-/* Skeleton loading */
+/* Skeleton loading - shimmer effect */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
@@ -723,6 +723,29 @@ html {
 
 .skeleton-pulse {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer overlay for skeleton */
+.skeleton-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(16, 185, 129, 0.06) 25%,
+    rgba(16, 185, 129, 0.12) 50%,
+    rgba(16, 185, 129, 0.06) 75%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer-sweep 2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* Star rating glow */
@@ -790,4 +813,163 @@ html {
 
 .skip-nav:focus {
   top: 0;
+}
+
+/* ========================================
+   NEW BADGE PULSE ANIMATION
+   ======================================== */
+
+@keyframes new-badge-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
+
+.new-badge-pulse {
+  animation: new-badge-pulse 2s ease-in-out infinite;
+}
+
+/* ========================================
+   DIFFICULTY FILTER BOUNCE
+   ======================================== */
+
+@keyframes diff-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  70% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.diff-bounce {
+  animation: diff-bounce 0.3s ease-out;
+}
+
+/* ========================================
+   TAB SCALE-UP ANIMATION
+   ======================================== */
+
+@keyframes tab-scale-in {
+  0% { transform: scale(0.97); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.tab-scale-in {
+  animation: tab-scale-in 0.25s ease-out;
+}
+
+/* ========================================
+   PLAYGROUND TYPING CURSOR
+   ======================================== */
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.playground-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background: #10b981;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* ========================================
+   FOOTER GRADIENT ANIMATION
+   ======================================== */
+
+@keyframes footer-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.footer-gradient-anim {
+  background: linear-gradient(90deg, transparent 0%, #10b98140 15%, #10b981 30%, #3b82f6 50%, #10b981 70%, #10b98140 85%, transparent 100%) !important;
+  background-size: 200% 100% !important;
+  animation: footer-gradient-flow 6s ease-in-out infinite !important;
+}
+
+/* ========================================
+   SOCIAL LINK HOVER ANIMATION
+   ======================================== */
+
+.social-link-hover {
+  transition: all 0.25s ease;
+}
+
+.social-link-hover:hover {
+  transform: scale(1.15) translateY(-2px);
+}
+
+/* ========================================
+   SIDEBAR CATEGORY ALTERNATING ROWS
+   ======================================== */
+
+.sidebar-row-even {
+  background: transparent;
+}
+
+.sidebar-row-odd {
+  background: rgba(16, 185, 129, 0.015);
+}
+
+.dark .sidebar-row-odd {
+  background: rgba(255, 255, 255, 0.012);
+}
+
+/* ========================================
+   CODE PREVIEW TOOLTIP
+   ======================================== */
+
+.code-tooltip {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  max-width: 280px;
+  overflow: hidden;
+}
+
+/* ========================================
+   ACTIVE FILTER/TAG BORDER BOTTOM ANIM
+   ======================================== */
+
+@keyframes border-bottom-grow {
+  0% { border-bottom-width: 0px; }
+  100% { border-bottom-width: 2px; }
+}
+
+.active-border-bottom {
+  animation: border-bottom-grow 0.2s ease-out forwards;
+}
+
+/* ========================================
+   COPY CODE BUTTON GRADIENT
+   ======================================== */
+
+.copy-btn-gradient {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.20) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.copy-btn-gradient:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.28) 100%);
+  border-color: rgba(16, 185, 129, 0.30);
+}
+
+/* ========================================
+   SEARCH SUGGESTION DROPDOWN
+   ======================================== */
+
+.search-suggestion-item {
+  transition: background-color 0.1s ease;
+}
+
+.search-suggestion-item:hover {
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.dark .search-suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.04);
 }

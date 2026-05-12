@@ -1,10 +1,10 @@
 'use client';
 
 import type { CSSEffect } from '@/lib/effects-data';
-import { useEffectsStore } from '@/lib/effects-store';
-import { motion } from 'framer-motion';
-import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useEffectsStore, getCategoryColor, getEffectViews } from '@/lib/effects-store';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star, Eye, Code2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 interface EffectCardProps {
@@ -32,15 +32,36 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [heartAnimating, setHeartAnimating] = useState(false);
   const [checkAnimating, setCheckAnimating] = useState(false);
+  const [showCodeTooltip, setShowCodeTooltip] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isFavorited = favorites.includes(effect.id);
   const isComparing = compareIds.includes(effect.id);
   const complexity = getComplexity(effect.cssCode);
   const starCount = getStarCount(effect.difficulty);
   const isDark = theme === 'dark';
+  const catColor = getCategoryColor(effect.category);
+  const viewCount = getEffectViews(effect.id);
+
+  // Code preview tooltip: show after 800ms hover
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    hoverTimerRef.current = setTimeout(() => {
+      setShowCodeTooltip(true);
+    }, 800);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+    setShowCodeTooltip(false);
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }, []);
 
   // Inject CSS for the preview
   useEffect(() => {
@@ -141,6 +162,15 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     }
   }, [isFocused]);
 
+  // Cleanup hover timer
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(effect.cssCode + '\n\n' + effect.htmlCode);
@@ -173,6 +203,12 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     advanced: 'bg-red-500/15 text-red-400 border-red-500/20',
   };
 
+  const difficultyBorderColors = {
+    beginner: 'border-l-emerald-400',
+    intermediate: 'border-l-yellow-400',
+    advanced: 'border-l-red-400',
+  };
+
   const difficultyStarColor = {
     beginner: 'text-emerald-400',
     intermediate: 'text-yellow-400',
@@ -180,6 +216,15 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   };
 
   const complexityColor = complexity > 70 ? 'bg-red-500' : complexity > 40 ? 'bg-yellow-500' : 'bg-emerald-500';
+
+  // Get first 4 lines of CSS for tooltip
+  const cssPreviewLines = effect.cssCode.split('\n').slice(0, 4).join('\n');
+
+  // Format view count
+  const formatViews = (count: number): string => {
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
+  };
 
   // Staggered entrance animation - more dramatic
   const staggerDelay = Math.min(index * 0.04, 0.6);
@@ -192,8 +237,8 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
         animate={{ opacity: 1, x: 0, scale: 1 }}
         transition={{ duration: 0.3, delay: staggerDelay, ease: [0.25, 0.46, 0.45, 0.94] }}
         onClick={() => setSelectedEffectId(effect.id)}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={`flex items-center gap-4 p-3 border rounded-xl transition-all cursor-pointer group relative emerald-pulse-glow card-shine ${
           isFocused ? 'effect-card-focused border-emerald-500/40' : ''
         } ${isDark ? 'bg-[#111] border-gray-800/50 hover:border-emerald-500/30' : 'bg-white border-gray-200 hover:border-emerald-500/40 shadow-sm'}`}
@@ -226,13 +271,23 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               {effect.name}
             </h3>
             {effect.isNew && (
-              <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded shrink-0 new-badge-pulse">
                 NEW
               </span>
             )}
           </div>
-          <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
+          <div className="flex items-center gap-2">
+            <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
+          </div>
         </div>
+
+        {/* Category color badge */}
+        <span
+          className="text-[10px] px-2 py-0.5 rounded-full border shrink-0"
+          style={{ backgroundColor: `${catColor}15`, color: catColor, borderColor: `${catColor}30` }}
+        >
+          {effect.category.replace('-', ' ')}
+        </span>
 
         {/* Star rating */}
         <div className="flex items-center gap-0.5 shrink-0" title={`${starCount} star${starCount > 1 ? 's' : ''} difficulty`}>
@@ -244,8 +299,14 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
           ))}
         </div>
 
-        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${difficultyColors[effect.difficulty]}`}>
+        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border border-l-2 ${difficultyColors[effect.difficulty]} ${difficultyBorderColors[effect.difficulty]}`}>
           {effect.difficulty}
+        </span>
+
+        {/* Views count */}
+        <span className={`text-[10px] flex items-center gap-0.5 shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+          <Eye className="w-3 h-3" />
+          {formatViews(viewCount)}
         </span>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -278,8 +339,8 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4, delay: staggerDelay, ease: [0.25, 0.46, 0.45, 0.94] }}
       onClick={() => setSelectedEffectId(effect.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow card-shine ${
         isFocused ? 'effect-card-focused border-emerald-500/40' : ''
       } ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200 shadow-sm'}`}
@@ -336,15 +397,23 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             className="relative z-10 flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-400 pointer-events-none"
           />
 
+          {/* Gradient overlay at bottom of preview for text readability */}
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/40 to-transparent z-5 pointer-events-none" />
+
           {/* "View Code →" overlay on hover with backdrop blur - smooth slide up */}
           <motion.div
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 12 }}
             transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent py-3 px-4 flex items-center justify-center z-20 backdrop-blur-[2px]"
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent py-3 px-4 flex items-center justify-between z-20 backdrop-blur-[2px]"
           >
             <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">
               View Code <span className="text-emerald-400">→</span>
+            </span>
+            {/* Views count in overlay */}
+            <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+              <Eye className="w-3 h-3" />
+              {formatViews(viewCount)}
             </span>
           </motion.div>
 
@@ -379,6 +448,32 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
           >
             <GitCompare className={`w-3.5 h-3.5 ${checkAnimating ? 'checkmark-draw' : ''}`} />
           </motion.button>
+
+          {/* Code Preview Tooltip */}
+          <AnimatePresence>
+            {showCodeTooltip && isHovered && (
+              <motion.div
+                initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="code-tooltip absolute top-2 left-1/2 -translate-x-1/2 z-30"
+              >
+                <div className={`rounded-lg border shadow-xl overflow-hidden ${
+                  isDark ? 'bg-[#0d1117] border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <div className={`px-2.5 py-1.5 border-b flex items-center gap-1.5 ${isDark ? 'border-gray-800 bg-[#0d1117]' : 'border-gray-200 bg-gray-50'}`}>
+                    <Code2 className="w-3 h-3 text-emerald-400/70" />
+                    <span className={`text-[9px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>CSS Preview</span>
+                  </div>
+                  <pre className={`px-2.5 py-2 text-[9px] font-mono leading-relaxed whitespace-pre max-w-[260px] overflow-hidden ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {cssPreviewLines}
+                    {'\n...'}
+                  </pre>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Complexity bar under preview */}
@@ -397,7 +492,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             </h3>
             <div className="flex items-center gap-1 shrink-0">
               {effect.isNew && (
-                <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 new-badge-pulse">
                   <Sparkles className="w-2.5 h-2.5" /> NEW
                 </span>
               )}
@@ -416,10 +511,16 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
                 />
               ))}
             </div>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border border-l-2 ${difficultyColors[effect.difficulty]} ${difficultyBorderColors[effect.difficulty]}`}>
               {effect.difficulty}
             </span>
-            <span className={`text-[10px] capitalize ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{effect.category.replace('-', ' ')}</span>
+            {/* Category color badge */}
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full border capitalize"
+              style={{ backgroundColor: `${catColor}12`, color: catColor, borderColor: `${catColor}25` }}
+            >
+              {effect.category.replace('-', ' ')}
+            </span>
             <span className={`text-[10px] ml-auto`} title="Complexity based on CSS properties" style={{ color: complexity > 70 ? '#f87171' : complexity > 40 ? '#fbbf24' : '#34d399' }}>
               {complexity > 70 ? 'Complex' : complexity > 40 ? 'Medium' : 'Simple'}
             </span>
@@ -439,10 +540,10 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
           <div className="flex items-center gap-2 mt-auto">
             <button
               onClick={handleCopy}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all copy-btn-gradient ${
                 copied
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 copy-bounce'
-                  : 'bg-emerald-500/10 text-emerald-400/80 hover:bg-emerald-500/20 border border-emerald-500/10 hover:border-emerald-500/30'
+                  : 'text-emerald-400/80 hover:text-emerald-400'
               }`}
               aria-label={`Copy code for ${effect.name}`}
             >

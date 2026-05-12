@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffectsStore, featuredEffectIds } from '@/lib/effects-store';
-import { getTagCounts, effects, collections } from '@/lib/effects-data';
+import { useEffectsStore, featuredEffectIds, getCategoryColor } from '@/lib/effects-store';
+import { getTagCounts, effects, collections, categories } from '@/lib/effects-data';
 import type { Difficulty } from '@/lib/effects-data';
-import { LayoutGrid, List, Shuffle, Keyboard, X, Download, FileDown, Heart, GitCompare } from 'lucide-react';
+import { LayoutGrid, List, Shuffle, Keyboard, X, Download, FileDown, Heart, GitCompare, RotateCcw } from 'lucide-react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -153,6 +153,112 @@ function doDownload(htmlContent: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+// Keyboard Shortcuts Dialog
+function KeyboardShortcutsDialog() {
+  const { keyboardShortcutsOpen, setKeyboardShortcutsOpen, theme } = useEffectsStore();
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && keyboardShortcutsOpen) {
+        setKeyboardShortcutsOpen(false);
+      }
+    };
+    if (keyboardShortcutsOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [keyboardShortcutsOpen, setKeyboardShortcutsOpen]);
+
+  if (!keyboardShortcutsOpen) return null;
+
+  const shortcuts = [
+    { id: 'focus-search', keys: ['/'], description: 'Focus search bar', icon: '🔍' },
+    { id: 'nav-up-down', keys: ['↑', '↓'], description: 'Navigate effects (vertical)', icon: '🧭' },
+    { id: 'open-detail', keys: ['Enter'], description: 'Open effect detail', icon: '📋' },
+    { id: 'close-modal', keys: ['Esc'], description: 'Close modal / dialog', icon: '✕' },
+    { id: 'nav-left-right', keys: ['←', '→'], description: 'Navigate effects (horizontal)', icon: '↔️' },
+  ];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center"
+        onClick={() => setKeyboardShortcutsOpen(false)}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className={`w-full max-w-md mx-4 rounded-2xl border shadow-2xl overflow-hidden ${
+            isDark ? 'bg-[#0f0f1a] border-gray-800' : 'bg-white border-gray-200'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard shortcuts"
+        >
+          {/* Header */}
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-2">
+              <Keyboard className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+              <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Keyboard Shortcuts</h2>
+            </div>
+            <button
+              onClick={() => setKeyboardShortcutsOpen(false)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+              aria-label="Close keyboard shortcuts"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Shortcuts list */}
+          <div className="px-6 py-4 space-y-3">
+            {shortcuts.map((shortcut) => (
+              <div key={shortcut.id} className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-sm">{shortcut.icon}</span>
+                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{shortcut.description}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {shortcut.keys.map((key, i) => (
+                    <span key={i}>
+                      <kbd className={`inline-flex items-center justify-center min-w-[28px] h-7 px-2 text-xs font-mono font-medium rounded-md border ${
+                        isDark
+                          ? 'bg-[#1a1a2e] border-gray-700 text-gray-300 shadow-sm'
+                          : 'bg-gray-50 border-gray-300 text-gray-700 shadow-sm'
+                      }`}>
+                        {key}
+                      </kbd>
+                      {i < shortcut.keys.length - 1 && (
+                        <span className={`mx-0.5 text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>/</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer hint */}
+          <div className={`px-6 py-3 border-t text-center ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+            <span className={`text-[11px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              Press <kbd className={`px-1 py-0.5 text-[10px] rounded border ${isDark ? 'bg-[#1a1a2e] border-gray-700 text-gray-400' : 'bg-gray-50 border-gray-300 text-gray-500'}`}>Esc</kbd> to close
+            </span>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export function FilterToolbar() {
   const {
     selectedDifficulty,
@@ -173,11 +279,13 @@ export function FilterToolbar() {
     favorites,
     compareIds,
     selectedFeatured,
+    setKeyboardShortcutsOpen,
   } = useEffectsStore();
 
   const isDark = theme === 'dark';
   const tagCounts = useMemo(() => getTagCounts(), []);
   const [showBatchMenu, setShowBatchMenu] = useState(false);
+  const [bouncingDiff, setBouncingDiff] = useState<string | null>(null);
   const batchMenuRef = useRef<HTMLDivElement>(null);
 
   // Close batch menu on click outside
@@ -305,6 +413,12 @@ export function FilterToolbar() {
     toast('All filters cleared', { duration: 1500 });
   };
 
+  const handleDifficultyClick = (value: Difficulty | 'all') => {
+    setSelectedDifficulty(value);
+    setBouncingDiff(value);
+    setTimeout(() => setBouncingDiff(null), 300);
+  };
+
   const handleBatchExport = (type: 'visible' | 'favorites' | 'compared') => {
     let ids: string[] = [];
     let title = '';
@@ -403,7 +517,7 @@ export function FilterToolbar() {
             onClick={handleClearAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/20 transition-all"
           >
-            <X className="w-3 h-3" />
+            <RotateCcw className="w-3 h-3" />
             Clear all
           </button>
         )}
@@ -532,10 +646,11 @@ export function FilterToolbar() {
           </button>
         </div>
 
+        {/* Keyboard shortcuts button - NOW OPENS DIALOG */}
         <button
-          className={`p-1.5 transition-colors ${isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'}`}
-          title="Keyboard shortcuts: / to search, ↑↓ to navigate, Enter to open, Esc to close"
-          aria-label="Keyboard shortcuts"
+          onClick={() => setKeyboardShortcutsOpen(true)}
+          className={`p-1.5 transition-colors rounded-lg ${isDark ? 'text-gray-600 hover:text-gray-400 hover:bg-white/5' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+          aria-label="Show keyboard shortcuts"
         >
           <Keyboard className="w-4 h-4" />
         </button>
@@ -565,15 +680,17 @@ export function FilterToolbar() {
         )}
       </AnimatePresence>
 
-      {/* Difficulty filter with glow */}
+      {/* Difficulty filter with glow and bounce */}
       <div className="flex flex-wrap gap-2">
         {difficulties.map((d) => (
           <button
             key={d.value}
-            onClick={() => setSelectedDifficulty(d.value)}
+            onClick={() => handleDifficultyClick(d.value)}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              bouncingDiff === d.value ? 'diff-bounce' : ''
+            } ${
               selectedDifficulty === d.value
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
                 : isDark
                   ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
                   : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
@@ -590,7 +707,7 @@ export function FilterToolbar() {
         ))}
       </div>
 
-      {/* Tags - shown by default */}
+      {/* Tags - shown by default with better visual hierarchy */}
       <div>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
           {tagCounts.slice(0, 30).map(({ tag, count }) => (
@@ -599,7 +716,7 @@ export function FilterToolbar() {
               onClick={() => toggleTag(tag)}
               className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                 selectedTags.includes(tag)
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
                   : isDark
                     ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
                     : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
@@ -611,12 +728,15 @@ export function FilterToolbar() {
         </div>
       </div>
 
-      {/* Pagination info only - buttons are at bottom of grid in page.tsx */}
+      {/* Pagination info */}
       {visibleCount < filteredCount && (
         <p className={`text-center text-xs pt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
           Scroll down for more effects ↓
         </p>
       )}
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog />
     </div>
   );
 }

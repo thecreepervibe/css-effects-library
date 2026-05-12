@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { Search, Shuffle, Moon, Sun, Sparkles, Layers, Code2, Package, Clock, X, Trash2 } from 'lucide-react';
-import { useEffectsStore } from '@/lib/effects-store';
-import { effects } from '@/lib/effects-data';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { Search, Shuffle, Moon, Sun, Sparkles, Layers, Code2, Package, Clock, X, Trash2, Tag, FolderOpen } from 'lucide-react';
+import { useEffectsStore, getCategoryColor } from '@/lib/effects-store';
+import { effects, categories } from '@/lib/effects-data';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Subtle particle dots for the header background
@@ -65,10 +65,17 @@ function HeaderParticles() {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
 }
 
+interface SearchSuggestion {
+  type: 'effect' | 'category' | 'tag';
+  text: string;
+  description?: string;
+}
+
 export function Header() {
   const { searchQuery, setSearchQuery, setSelectedEffectId, filteredCount, theme, toggleTheme, searchHistory, addSearchHistory, clearSearchHistory } = useEffectsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const isDark = theme === 'dark';
 
   useEffect(() => {
@@ -81,6 +88,7 @@ export function Header() {
         inputRef.current?.blur();
         setSearchQuery('');
         setSelectedEffectId(null);
+        setShowSuggestions(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -102,17 +110,74 @@ export function Header() {
   const handleHistoryClick = useCallback((query: string) => {
     setSearchQuery(query);
     setShowHistory(false);
+    setShowSuggestions(false);
     inputRef.current?.focus();
   }, [setSearchQuery]);
 
+  const handleSuggestionClick = useCallback((suggestion: SearchSuggestion) => {
+    if (suggestion.type === 'effect') {
+      const effect = effects.find(e => e.name === suggestion.text);
+      if (effect) {
+        setSelectedEffectId(effect.id);
+      }
+    } else if (suggestion.type === 'category') {
+      const cat = categories.find(c => c.name === suggestion.text);
+      if (cat) {
+        useEffectsStore.getState().setSelectedCategory(cat.id);
+      }
+    } else if (suggestion.type === 'tag') {
+      useEffectsStore.getState().toggleTag(suggestion.text);
+    }
+    setShowSuggestions(false);
+    setShowHistory(false);
+    inputRef.current?.blur();
+  }, [setSelectedEffectId]);
+
   const handleInputFocus = () => {
-    setShowHistory(true);
+    if (searchQuery.trim()) {
+      setShowSuggestions(true);
+    } else {
+      setShowHistory(true);
+    }
   };
 
   const handleInputBlur = () => {
-    // Delay to allow click on history items
-    setTimeout(() => setShowHistory(false), 200);
+    // Delay to allow click on history/suggestion items
+    setTimeout(() => {
+      setShowHistory(false);
+      setShowSuggestions(false);
+    }, 200);
   };
+
+  // Auto-suggestions based on search query
+  const suggestions = useMemo((): SearchSuggestion[] => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    const results: SearchSuggestion[] = [];
+
+    // Matching effects (max 4)
+    const matchingEffects = effects.filter(e => e.name.toLowerCase().includes(q)).slice(0, 4);
+    matchingEffects.forEach(e => {
+      results.push({ type: 'effect', text: e.name, description: e.description });
+    });
+
+    // Matching categories (max 3)
+    const matchingCategories = categories.filter(c => c.id !== 'all' && c.name.toLowerCase().includes(q)).slice(0, 3);
+    matchingCategories.forEach(c => {
+      results.push({ type: 'category', text: c.name, description: `${c.count} effects` });
+    });
+
+    // Matching tags (max 3)
+    const allTags = new Set<string>();
+    effects.forEach(e => e.tags.forEach(t => allTags.add(t)));
+    const matchingTags = Array.from(allTags).filter(t => t.toLowerCase().includes(q)).slice(0, 3);
+    matchingTags.forEach(t => {
+      const count = effects.filter(e => e.tags.includes(t)).length;
+      results.push({ type: 'tag', text: t, description: `${count} effects` });
+    });
+
+    return results.slice(0, 8);
+  }, [searchQuery]);
 
   const totalEffects = effects.length;
   const totalCategories = 38;
@@ -148,6 +213,7 @@ export function Header() {
       <h1 className={`text-3xl md:text-4xl font-extrabold mb-2 tracking-tight relative z-10 ${isDark ? 'text-white' : 'text-gray-900'}`}>
         CSS{' '}
         <span
+          className="text-4xl md:text-5xl"
           style={{
             background: 'linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981)',
             backgroundSize: '300% 300%',
@@ -161,19 +227,27 @@ export function Header() {
         </span>{' '}
         Library
       </h1>
-      <p className={`max-w-2xl mx-auto mb-5 text-sm relative z-10 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+      <p className={`max-w-2xl mx-auto mb-7 text-sm tracking-wide relative z-10 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
         A curated collection of beautiful CSS effects with live preview &amp; ready-to-use code. Copy, paste, and create magic. ✨
       </p>
 
       {/* Search Bar - full width on mobile */}
-      <div className="flex items-center gap-3 max-w-lg mx-auto mb-5 px-2 sm:px-0 relative z-10">
+      <div className="flex items-center gap-3 max-w-lg mx-auto mb-6 px-2 sm:px-0 relative z-10">
         <div className="relative flex-1">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
             ref={inputRef}
             type="text"
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => {
+              handleSearch(e.target.value);
+              if (e.target.value.trim()) {
+                setShowSuggestions(true);
+                setShowHistory(false);
+              } else {
+                setShowSuggestions(false);
+              }
+            }}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             placeholder="Search effects... (press / to focus)"
@@ -184,6 +258,64 @@ export function Header() {
                 : 'bg-white border-gray-200 text-gray-800 placeholder:text-gray-400'
             }`}
           />
+
+          {/* Search Suggestions Dropdown */}
+          <AnimatePresence>
+            {showSuggestions && suggestions.length > 0 && searchQuery.trim() && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute top-full left-0 right-0 mt-1 rounded-xl border shadow-lg z-50 overflow-hidden ${
+                  isDark
+                    ? 'bg-[#111] border-gray-800 shadow-black/30'
+                    : 'bg-white border-gray-200 shadow-gray-200/50'
+                }`}
+              >
+                <div className={`px-3 py-2 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Suggestions
+                  </span>
+                </div>
+                <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={`${s.type}-${s.text}-${i}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSuggestionClick(s);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 search-suggestion-item ${
+                        isDark
+                          ? 'text-gray-400 hover:text-gray-200'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      {s.type === 'effect' && <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-400/70" />}
+                      {s.type === 'category' && <FolderOpen className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />}
+                      {s.type === 'tag' && <Tag className="w-3.5 h-3.5 shrink-0 text-purple-400/70" />}
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium">{s.text}</div>
+                        {s.description && (
+                          <div className={`text-[10px] truncate ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{s.description}</div>
+                        )}
+                      </div>
+                      <span className={`text-[9px] uppercase font-medium px-1.5 py-0.5 rounded shrink-0 ${
+                        s.type === 'effect'
+                          ? 'bg-emerald-500/10 text-emerald-400/70'
+                          : s.type === 'category'
+                            ? 'bg-blue-500/10 text-blue-400/70'
+                            : 'bg-purple-500/10 text-purple-400/70'
+                      }`}>
+                        {s.type}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Search History Dropdown */}
           <AnimatePresence>
@@ -236,7 +368,6 @@ export function Header() {
                     ))}
                   </div>
                 ) : (
-                  /* Empty state for search history */
                   <div className="px-4 py-6 text-center">
                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/5 border border-emerald-500/10 mb-3">
                       <Clock className={`w-5 h-5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
@@ -275,15 +406,15 @@ export function Header() {
         </button>
       </div>
 
-      {/* Stats Row */}
+      {/* Stats Row with gradient backgrounds */}
       <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
         {[
-          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400' },
-          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400' },
-          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400' },
-          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400' },
+          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400', gradientFrom: 'from-emerald-500/8', gradientTo: 'to-emerald-500/3' },
+          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400', gradientFrom: 'from-blue-500/8', gradientTo: 'to-blue-500/3' },
+          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400', gradientFrom: 'from-purple-500/8', gradientTo: 'to-purple-500/3' },
+          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400', gradientFrom: 'from-amber-500/8', gradientTo: 'to-amber-500/3' },
         ].map((stat) => (
-          <div key={stat.label} className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isDark ? 'bg-[#111]/70 border-gray-800/40' : 'bg-gray-50 border-gray-200/60'}`}>
+          <div key={stat.label} className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${stat.gradientFrom} ${stat.gradientTo} ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
             <stat.icon className={`w-4 h-4 ${stat.color} opacity-70`} />
             <span className={`${stat.color} font-bold text-sm`}>{stat.value}</span>
             <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{stat.label}</span>

@@ -109,6 +109,35 @@ interface EffectsStore {
   playgroundCss: string;
   setPlaygroundCss: (css: string) => void;
   resetPlaygroundCss: () => void;
+
+  // Keyboard shortcuts dialog
+  keyboardShortcutsOpen: boolean;
+  setKeyboardShortcutsOpen: (open: boolean) => void;
+}
+
+// Category color palette - deterministic color based on category ID
+const CATEGORY_COLORS = [
+  '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444',
+  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+];
+
+export function getCategoryColor(categoryId: string): string {
+  let hash = 0;
+  for (let i = 0; i < categoryId.length; i++) {
+    hash = ((hash << 5) - hash) + categoryId.charCodeAt(i);
+    hash |= 0;
+  }
+  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length];
+}
+
+// Simulated views counter based on effect ID hash
+export function getEffectViews(effectId: string): number {
+  let hash = 0;
+  for (let i = 0; i < effectId.length; i++) {
+    hash = ((hash << 5) - hash) + effectId.charCodeAt(i);
+    hash |= 0;
+  }
+  return 50 + (Math.abs(hash) % 4951);
 }
 
 function loadFromLocalStorage<T>(key: string, fallback: T): T {
@@ -285,22 +314,37 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
 
   // Featured collection
   selectedFeatured: false,
-  setSelectedFeatured: (val) => set({
+  setSelectedFeatured: (val) => set(val ? {
     selectedFeatured: val,
-    selectedCollection: val ? 'featured' : null,
+    selectedCollection: 'featured',
     selectedCategory: 'all',
+  } : {
+    selectedFeatured: false,
+    // Don't reset selectedCollection or selectedCategory when unsetting featured
+    // - the caller may have already set them (e.g., handleCategoryClick sets category then calls this)
   }),
   toggleSelectedFeatured: () => {
     const current = get().selectedFeatured;
-    set({
-      selectedFeatured: !current,
-      selectedCollection: !current ? 'featured' : null,
-      selectedCategory: 'all',
-    });
+    if (!current) {
+      set({
+        selectedFeatured: true,
+        selectedCollection: 'featured',
+        selectedCategory: 'all',
+      });
+    } else {
+      set({
+        selectedFeatured: false,
+        // Don't reset selectedCollection or selectedCategory when toggling off
+      });
+    }
   },
 
   // Playground CSS
   playgroundCss: '',
   setPlaygroundCss: (css) => set({ playgroundCss: css }),
   resetPlaygroundCss: () => set({ playgroundCss: '' }),
+
+  // Keyboard shortcuts dialog
+  keyboardShortcutsOpen: false,
+  setKeyboardShortcutsOpen: (open) => set({ keyboardShortcutsOpen: open }),
 }));

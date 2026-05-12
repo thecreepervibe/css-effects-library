@@ -1,9 +1,9 @@
 'use client';
 
 import { categories, collections, getRecentlyAdded, effects } from '@/lib/effects-data';
-import { useEffectsStore, featuredEffectIds } from '@/lib/effects-store';
+import { useEffectsStore, featuredEffectIds, getCategoryColor } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown, ChevronRight, Flame, Heart, Clock, GitCompare, Star } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Flame, Heart, Clock, GitCompare, Star, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 export function Sidebar() {
@@ -148,27 +148,50 @@ export function Sidebar() {
         {/* Separator */}
         <div className={`h-px mx-2 mb-3 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200'}`} />
 
-        <div className="space-y-0.5">
-          {categories.map((cat) => {
+        {/* All Effects button - more prominent */}
+        <button
+          onClick={() => handleCategoryClick('all')}
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 mb-1 ${
+            selectedCategory === 'all' && !selectedCollection && !selectedFeatured
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
+              : isDark
+                ? 'text-gray-300 hover:bg-white/5 hover:text-gray-100 border border-transparent'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-emerald-400/80" />
+          All Effects
+          <span className={`ml-auto text-xs font-semibold ${selectedCategory === 'all' && !selectedCollection && !selectedFeatured ? 'text-emerald-400/70' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>{effects.length}</span>
+        </button>
+
+        <div className="space-y-0">
+          {categories.filter(c => c.id !== 'all').map((cat, index) => {
             const isActive = selectedCategory === cat.id && !selectedCollection && !selectedFeatured;
             const hasNew = newCategoryIds.includes(cat.id);
+            const catColor = getCategoryColor(cat.id);
+            const isOdd = index % 2 === 1;
             return (
               <button
                 key={cat.id}
                 onClick={() => handleCategoryClick(cat.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group sidebar-category-item ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group sidebar-category-item ${isOdd ? 'sidebar-row-odd' : 'sidebar-row-even'} ${
                   isActive
                     ? 'active bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
                     : isDark
-                      ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800 border border-transparent'
+                      ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:pl-4 border border-transparent'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800 hover:pl-4 border border-transparent'
                 }`}
               >
                 <span className="flex items-center gap-2 truncate">
+                  {/* Colored dot indicator */}
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: catColor, opacity: isActive ? 1 : 0.6 }}
+                  />
                   <span>{cat.emoji}</span>
                   <span className="truncate">{cat.name}</span>
                   {hasNew && (
-                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 new-badge-pulse">
                       <Flame className="w-2.5 h-2.5" /> NEW
                     </span>
                   )}

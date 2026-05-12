@@ -2,7 +2,7 @@
 
 import { effects, categories } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
-import { Heart, Github, Twitter, Code2, Sparkles, Layers, BookOpen, ExternalLink } from 'lucide-react';
+import { Heart, Github, Twitter, Code2, Sparkles, Layers, BookOpen, ExternalLink, Circle, Zap, Flame } from 'lucide-react';
 
 export function Footer() {
   const { theme } = useEffectsStore();
@@ -34,12 +34,9 @@ export function Footer() {
 
   return (
     <footer className="relative mt-auto" role="contentinfo">
-      {/* Top gradient border */}
+      {/* Top gradient border with animation */}
       <div
-        className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{
-          background: 'linear-gradient(90deg, transparent 5%, #10b98130, #10b981, #10b98130, transparent 95%)',
-        }}
+        className="absolute top-0 left-0 right-0 h-[2px] footer-gradient-anim"
       />
 
       <div className={isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}>
@@ -55,19 +52,20 @@ export function Footer() {
               <p className={`text-sm mb-4 leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                 A curated collection of {totalEffects} beautiful CSS effects with live preview &amp; ready-to-use code. Pure CSS, zero dependencies.
               </p>
-              <div className="flex items-center gap-2 text-sm text-emerald-400/80 font-medium">
-                <Sparkles className="w-4 h-4" />
-                Pure CSS, No Dependencies
+              {/* "Pure CSS, No Dependencies" badge - more prominent */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm text-emerald-400 font-bold">Pure CSS, No Dependencies</span>
               </div>
 
-              {/* Social Links */}
+              {/* Social Links with hover animations */}
               <div className="flex items-center gap-3 mt-4">
                 <a
                   href="#"
-                  className={`p-2 rounded-lg border transition-all ${
+                  className={`p-2 rounded-lg border transition-all social-link-hover ${
                     isDark
-                      ? 'border-gray-800 text-gray-500 hover:text-white hover:border-gray-600'
-                      : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-gray-800 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10'
+                      : 'border-gray-200 text-gray-400 hover:text-emerald-600 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/10'
                   }`}
                   aria-label="GitHub"
                   onClick={(e) => e.preventDefault()}
@@ -76,10 +74,10 @@ export function Footer() {
                 </a>
                 <a
                   href="#"
-                  className={`p-2 rounded-lg border transition-all ${
+                  className={`p-2 rounded-lg border transition-all social-link-hover ${
                     isDark
-                      ? 'border-gray-800 text-gray-500 hover:text-white hover:border-gray-600'
-                      : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-gray-800 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10'
+                      : 'border-gray-200 text-gray-400 hover:text-emerald-600 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/10'
                   }`}
                   aria-label="Twitter"
                   onClick={(e) => e.preventDefault()}
@@ -88,10 +86,10 @@ export function Footer() {
                 </a>
                 <a
                   href="#"
-                  className={`p-2 rounded-lg border transition-all ${
+                  className={`p-2 rounded-lg border transition-all social-link-hover ${
                     isDark
-                      ? 'border-gray-800 text-gray-500 hover:text-white hover:border-gray-600'
-                      : 'border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-gray-800 text-gray-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10'
+                      : 'border-gray-200 text-gray-400 hover:text-emerald-600 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/10'
                   }`}
                   aria-label="Code examples"
                   onClick={(e) => e.preventDefault()}
@@ -132,9 +130,10 @@ export function Footer() {
                 Difficulty Breakdown
               </h3>
               <div className="space-y-3">
-                {/* Beginner bar */}
+                {/* Beginner bar with tiny icon */}
                 <div className="flex items-center gap-2.5">
-                  <span className={`text-sm w-28 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Beginner</span>
+                  <Circle className="w-3 h-3 text-emerald-400 fill-current shrink-0" />
+                  <span className={`text-sm w-24 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Beginner</span>
                   <div className={`w-24 h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all duration-500"
@@ -144,9 +143,10 @@ export function Footer() {
                   <span className="text-sm text-emerald-400 font-bold w-8">{beginnerCount}</span>
                 </div>
 
-                {/* Intermediate bar */}
+                {/* Intermediate bar with tiny icon */}
                 <div className="flex items-center gap-2.5">
-                  <span className={`text-sm w-28 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Intermediate</span>
+                  <Zap className="w-3 h-3 text-yellow-400 fill-current shrink-0" />
+                  <span className={`text-sm w-24 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Intermediate</span>
                   <div className={`w-24 h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
                     <div
                       className="h-full bg-yellow-500 rounded-full transition-all duration-500"
@@ -156,9 +156,10 @@ export function Footer() {
                   <span className="text-sm text-yellow-400 font-bold w-8">{intermediateCount}</span>
                 </div>
 
-                {/* Advanced bar */}
+                {/* Advanced bar with tiny icon */}
                 <div className="flex items-center gap-2.5">
-                  <span className={`text-sm w-28 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Advanced</span>
+                  <Flame className="w-3 h-3 text-red-400 fill-current shrink-0" />
+                  <span className={`text-sm w-24 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Advanced</span>
                   <div className={`w-24 h-2.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
                     <div
                       className="h-full bg-red-500 rounded-full transition-all duration-500"
