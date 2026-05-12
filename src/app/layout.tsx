@@ -39,20 +39,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Prevent FOUC: set dark class before paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('css-effects-theme');if(t!=='light'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){document.documentElement.classList.add('dark')}})()`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
         {children}
         <Toaster
-          theme="dark"
           position="bottom-right"
           toastOptions={{
-            style: {
-              background: '#1a1a2e',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-              color: '#e5e7eb',
-            },
+            className: 'dark:bg-[#1a1a2e] dark:text-[#e5e7eb] dark:border-emerald-500/20 bg-white text-gray-800 border-gray-200',
           }}
         />
       </body>

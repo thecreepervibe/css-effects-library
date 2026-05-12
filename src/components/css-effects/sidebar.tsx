@@ -18,6 +18,7 @@ export function Sidebar() {
     recentlyViewed,
     compareIds,
     setCompareModalOpen,
+    theme,
   } = useEffectsStore();
 
   const [showCollections, setShowCollections] = useState(true);
@@ -26,6 +27,7 @@ export function Sidebar() {
   const [showRecentlyViewed, setShowRecentlyViewed] = useState(true);
 
   const recentlyAdded = getRecentlyAdded(15);
+  const isDark = theme === 'dark';
 
   // Get favorite effects
   const favoriteEffects = effects.filter((e) => favorites.includes(e.id));
@@ -38,7 +40,6 @@ export function Sidebar() {
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setSelectedCollection(null);
-    // Auto-close on mobile
     setSidebarOpen(false);
   };
 
@@ -48,14 +49,12 @@ export function Sidebar() {
     } else {
       setSelectedCollection(collectionId);
     }
-    // Auto-close on mobile
     setSidebarOpen(false);
   };
 
   const handleFavoritesClick = () => {
     setSelectedCollection('favorites');
     setSelectedCategory('all');
-    // Auto-close on mobile
     setSidebarOpen(false);
   };
 
@@ -72,8 +71,8 @@ export function Sidebar() {
     <div className="flex flex-col h-full">
       {/* Mobile close button */}
       <div className="flex items-center justify-between p-4 md:hidden">
-        <span className="text-white font-semibold">Menu</span>
-        <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white">
+        <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Menu</span>
+        <button onClick={() => setSidebarOpen(false)} className={isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}>
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -90,7 +89,9 @@ export function Sidebar() {
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group ${
                   isActive
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
+                    : isDark
+                      ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800 border border-transparent'
                 }`}
               >
                 <span className="flex items-center gap-2 truncate">
@@ -102,7 +103,7 @@ export function Sidebar() {
                     </span>
                   )}
                 </span>
-                <span className={`text-xs ml-2 shrink-0 ${isActive ? 'text-emerald-400/70' : 'text-gray-600'}`}>{cat.count}</span>
+                <span className={`text-xs ml-2 shrink-0 ${isActive ? 'text-emerald-400/70' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>{cat.count}</span>
               </button>
             );
           })}
@@ -115,7 +116,7 @@ export function Sidebar() {
               setShowFavorites(!showFavorites);
               if (favorites.length > 0) handleFavoritesClick();
             }}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors w-full"
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors w-full ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             {showFavorites ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             <Heart className="w-3 h-3 text-red-400/60" />
@@ -131,7 +132,7 @@ export function Sidebar() {
                 className="overflow-hidden"
               >
                 {favorites.length === 0 ? (
-                  <p className="text-[10px] text-gray-600 px-6 py-2">No favorites yet. Click the heart icon on any effect.</p>
+                  <p className={`text-[10px] px-6 py-2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>No favorites yet. Click the heart icon on any effect.</p>
                 ) : (
                   <div className="space-y-0.5">
                     {favoriteEffects.map((effect) => (
@@ -141,7 +142,9 @@ export function Sidebar() {
                           useEffectsStore.getState().setSelectedEffectId(effect.id);
                           setSidebarOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-white/5 hover:text-gray-300 transition-all truncate"
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all truncate ${
+                          isDark ? 'text-gray-500 hover:bg-white/5 hover:text-gray-300' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                        }`}
                       >
                         <Heart className="w-3 h-3 text-red-400/60 shrink-0 fill-current" />
                         <span className="truncate">{effect.name}</span>
@@ -158,7 +161,7 @@ export function Sidebar() {
         <div className="mt-4">
           <button
             onClick={() => setShowRecentlyViewed(!showRecentlyViewed)}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors w-full"
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors w-full ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             {showRecentlyViewed ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             <Clock className="w-3 h-3 text-gray-400/60" />
@@ -174,7 +177,7 @@ export function Sidebar() {
                 className="overflow-hidden"
               >
                 {recentlyViewedEffects.length === 0 ? (
-                  <p className="text-[10px] text-gray-600 px-6 py-2">No recently viewed effects yet.</p>
+                  <p className={`text-[10px] px-6 py-2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>No recently viewed effects yet.</p>
                 ) : (
                   <div className="space-y-0.5">
                     {recentlyViewedEffects.map((effect) => (
@@ -184,7 +187,9 @@ export function Sidebar() {
                           useEffectsStore.getState().setSelectedEffectId(effect.id);
                           setSidebarOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-white/5 hover:text-gray-300 transition-all truncate"
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all truncate ${
+                          isDark ? 'text-gray-500 hover:bg-white/5 hover:text-gray-300' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                        }`}
                       >
                         <Clock className="w-3 h-3 text-gray-400/40 shrink-0" />
                         <span className="truncate">{effect.name}</span>
@@ -201,7 +206,7 @@ export function Sidebar() {
         <div className="mt-4">
           <button
             onClick={() => setShowCollections(!showCollections)}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors w-full"
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors w-full ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             {showCollections ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             Collections
@@ -225,31 +230,21 @@ export function Sidebar() {
                         className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all duration-200 relative overflow-hidden ${
                           isSelected
                             ? 'bg-emerald-500/15 border border-emerald-500/20'
-                            : 'hover:bg-white/5 border border-transparent hover:border-gray-800/50'
+                            : isDark
+                              ? 'hover:bg-white/5 border border-transparent hover:border-gray-800/50'
+                              : 'hover:bg-gray-50 border border-transparent hover:border-gray-200'
                         }`}
                       >
-                        {/* Gradient border on hover */}
-                        {!isSelected && (
-                          <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity rounded-lg"
-                            style={{
-                              padding: '1px',
-                              background: 'linear-gradient(135deg, #10b98140, #3b82f640, #8b5cf640)',
-                              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                              WebkitMaskComposite: 'xor',
-                              maskComposite: 'exclude',
-                            }}
-                          />
-                        )}
                         <div className="flex items-center justify-between gap-2">
                           <span className="flex items-center gap-2 truncate">
                             <span>{col.emoji}</span>
-                            <span className={`truncate font-medium ${isSelected ? 'text-emerald-400' : 'text-gray-300'}`}>
+                            <span className={`truncate font-medium ${isSelected ? 'text-emerald-400' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                               {col.name}
                             </span>
                           </span>
-                          <span className="text-xs text-gray-600 shrink-0">{col.effectIds.length}</span>
+                          <span className={`text-xs shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{col.effectIds.length}</span>
                         </div>
-                        <p className="text-[10px] text-gray-600 mt-0.5 ml-6 truncate">{col.description}</p>
+                        <p className={`text-[10px] mt-0.5 ml-6 truncate ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{col.description}</p>
                       </button>
                     );
                   })}
@@ -263,7 +258,7 @@ export function Sidebar() {
         <div className="mt-4">
           <button
             onClick={() => setShowRecent(!showRecent)}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 transition-colors w-full"
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors w-full ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             {showRecent ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             Recently Added ({recentlyAdded.length})
@@ -285,7 +280,9 @@ export function Sidebar() {
                         useEffectsStore.getState().setSelectedEffectId(effect.id);
                         setSidebarOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-white/5 hover:text-gray-300 transition-all truncate"
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all truncate ${
+                        isDark ? 'text-gray-500 hover:bg-white/5 hover:text-gray-300' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                      }`}
                     >
                       <span>{getCategoryEmoji(effect.category)}</span>
                       <span className="truncate">{effect.name}</span>
@@ -298,7 +295,7 @@ export function Sidebar() {
           </AnimatePresence>
         </div>
 
-        {/* Compare section - show when items selected */}
+        {/* Compare section */}
         {compareIds.length >= 2 && (
           <div className="mt-4 px-3">
             <button
@@ -320,11 +317,17 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:block w-64 shrink-0 border-r border-gray-800/50 bg-[#0a0a0a] h-full overflow-hidden">
+      <aside
+        role="navigation"
+        aria-label="Effect categories"
+        className={`hidden md:block w-64 shrink-0 border-r h-full overflow-hidden ${
+          isDark ? 'border-gray-800/50 bg-[#0a0a0a]' : 'border-gray-200/60 bg-gray-50/80'
+        }`}
+      >
         {sidebarContent}
       </aside>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay with glass morphism */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -332,15 +335,19 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-40 md:hidden"
+              className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
+              role="navigation"
+              aria-label="Effect categories"
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 bottom-0 w-72 bg-[#0a0a0a] border-r border-gray-800/50 z-50 md:hidden"
+              className={`fixed left-0 top-0 bottom-0 w-72 border-r z-50 md:hidden glass-sidebar ${
+                isDark ? 'border-gray-800/50' : 'border-gray-200/60'
+              }`}
             >
               {sidebarContent}
             </motion.aside>

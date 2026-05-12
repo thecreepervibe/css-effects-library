@@ -14,10 +14,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Compare Modal Component
 function CompareModal() {
-  const { compareModalOpen, setCompareModalOpen, compareIds, clearCompare } = useEffectsStore();
+  const { compareModalOpen, setCompareModalOpen, compareIds, clearCompare, theme } = useEffectsStore();
   const [activeCompareTab, setActiveCompareTab] = useState<Record<string, 'preview' | 'css' | 'html'>>({});
   const previewRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const styleRefs = useRef<Record<string, HTMLStyleElement | null>>({});
+  const isDark = theme === 'dark';
 
   const compareEffects = effects.filter((e) => compareIds.includes(e.id));
 
@@ -115,13 +116,15 @@ function CompareModal() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-4 md:inset-8 lg:inset-12 bg-[#0f0f1a] border border-gray-800 rounded-2xl z-[60] overflow-hidden flex flex-col"
+        className={`fixed inset-4 md:inset-8 lg:inset-12 border rounded-2xl z-[60] overflow-hidden flex flex-col glass-modal ${
+          isDark ? 'border-gray-800' : 'border-gray-200'
+        }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
           <div className="flex items-center gap-3">
             <GitCompare className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-lg font-bold text-white">Compare Effects ({compareEffects.length})</h2>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Compare Effects ({compareEffects.length})</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -136,7 +139,8 @@ function CompareModal() {
             </button>
             <button
               onClick={() => setCompareModalOpen(false)}
-              className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+              className={`p-2 rounded-lg transition-all ${isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+              aria-label="Close compare modal"
             >
               <X className="w-5 h-5" />
             </button>
@@ -154,19 +158,19 @@ function CompareModal() {
             {compareEffects.map((effect) => {
               const tab = activeCompareTab[effect.id] || 'preview';
               return (
-                <div key={effect.id} className="flex flex-col border border-gray-800/50 rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-800/50 bg-[#111]">
-                    <h3 className="text-sm font-semibold text-white">{effect.name}</h3>
-                    <p className="text-[10px] text-gray-500">{effect.description}</p>
+                <div key={effect.id} className={`flex flex-col border rounded-xl overflow-hidden ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                  <div className={`px-4 py-3 border-b ${isDark ? 'border-gray-800/50 bg-[#111]' : 'border-gray-200 bg-gray-50'}`}>
+                    <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{effect.name}</h3>
+                    <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{effect.description}</p>
                   </div>
                   {/* Tabs */}
-                  <div className="flex border-b border-gray-800/30">
+                  <div className={`flex border-b ${isDark ? 'border-gray-800/30' : 'border-gray-200'}`}>
                     {(['preview', 'css', 'html'] as const).map((t) => (
                       <button
                         key={t}
                         onClick={() => setActiveCompareTab((prev) => ({ ...prev, [effect.id]: t }))}
                         className={`flex-1 px-3 py-1.5 text-[10px] font-medium transition-all ${
-                          tab === t ? 'text-emerald-400 border-b border-emerald-400' : 'text-gray-500'
+                          tab === t ? 'text-emerald-400 border-b border-emerald-400' : isDark ? 'text-gray-500' : 'text-gray-400'
                         }`}
                       >
                         {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -175,7 +179,7 @@ function CompareModal() {
                   </div>
                   <div className="flex-1 overflow-auto custom-scrollbar">
                     {tab === 'preview' && (
-                      <div className="flex items-center justify-center min-h-[200px] p-6 bg-[#0a0a0a]">
+                      <div className={`flex items-center justify-center min-h-[200px] p-6 ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
                         <div
                           ref={(el) => { previewRefs.current[effect.id] = el; }}
                           className="transform scale-110"
@@ -183,12 +187,12 @@ function CompareModal() {
                       </div>
                     )}
                     {tab === 'css' && (
-                      <pre className="p-4 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0 text-gray-300">
+                      <pre className={`p-4 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 ${isDark ? 'bg-[#0a0a0a] text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
                         {effect.cssCode}
                       </pre>
                     )}
                     {tab === 'html' && (
-                      <pre className="p-4 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0 text-gray-300">
+                      <pre className={`p-4 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 ${isDark ? 'bg-[#0a0a0a] text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
                         {effect.htmlCode}
                       </pre>
                     )}
@@ -206,6 +210,8 @@ function CompareModal() {
 // Scroll to top button with smooth scroll
 function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const theme = useEffectsStore((s) => s.theme);
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -240,7 +246,8 @@ function ScrollToTop() {
 
 // Enhanced empty state component
 function EmptyState() {
-  const { clearAllFilters, setSelectedCategory, setSearchQuery } = useEffectsStore();
+  const { clearAllFilters, setSelectedCategory, setSearchQuery, theme } = useEffectsStore();
+  const isDark = theme === 'dark';
 
   return (
     <motion.div
@@ -259,8 +266,8 @@ function EmptyState() {
         <div className="absolute -bottom-1 -left-3 w-3 h-3 rounded-full bg-emerald-500/10 float-bounce" style={{ animationDelay: '1s' }} />
       </div>
 
-      <h3 className="text-xl font-semibold text-gray-300 mb-2">No effects found</h3>
-      <p className="text-sm text-gray-500 max-w-md mb-6">
+      <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>No effects found</h3>
+      <p className={`text-sm max-w-md mb-6 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
         We couldn&apos;t find any effects matching your current filters. Try one of these options:
       </p>
 
@@ -277,7 +284,9 @@ function EmptyState() {
         </button>
         <button
           onClick={() => setSelectedCategory('text')}
-          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-400 text-sm font-medium hover:border-gray-700 hover:text-gray-300 transition-all"
+          className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium transition-all ${
+            isDark ? 'bg-[#111] border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
+          }`}
         >
           <Compass className="w-4 h-4" />
           Browse Text Effects
@@ -287,13 +296,31 @@ function EmptyState() {
             setSearchQuery('button');
             setSelectedCategory('all');
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-400 text-sm font-medium hover:border-gray-700 hover:text-gray-300 transition-all"
+          className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium transition-all ${
+            isDark ? 'bg-[#111] border-gray-800 text-gray-400 hover:border-gray-700 hover:text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
+          }`}
         >
           <SearchX className="w-4 h-4" />
           Search &quot;button&quot;
         </button>
       </div>
     </motion.div>
+  );
+}
+
+// Loading skeleton for cards
+function CardSkeleton() {
+  const { theme } = useEffectsStore();
+  const isDark = theme === 'dark';
+  return (
+    <div className={`rounded-2xl overflow-hidden ${isDark ? 'bg-[#111]' : 'bg-white border border-gray-200'}`}>
+      <div className={`h-40 skeleton-pulse ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`} />
+      <div className="p-4 space-y-3">
+        <div className={`h-4 rounded w-3/4 skeleton-pulse ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`} />
+        <div className={`h-3 rounded w-1/2 skeleton-pulse ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`} />
+        <div className={`h-8 rounded w-1/3 skeleton-pulse ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`} />
+      </div>
+    </div>
   );
 }
 
@@ -313,7 +340,13 @@ export default function HomePage() {
     selectedEffectId,
     focusedEffectIndex,
     setFocusedEffectIndex,
+    visibleCount,
+    setVisibleCount,
+    theme,
   } = useEffectsStore();
+
+  const isDark = theme === 'dark';
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const filteredEffects = useMemo(() => {
     let filtered = effects;
@@ -356,10 +389,34 @@ export default function HomePage() {
     return filtered;
   }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection]);
 
+  // Apply pagination - slice the visible effects
+  const visibleEffects = useMemo(() => {
+    return filteredEffects.slice(0, visibleCount);
+  }, [filteredEffects, visibleCount]);
+
   // Update filtered count in store
   useEffect(() => {
     useEffectsStore.getState().setFilteredCount(filteredEffects.length);
   }, [filteredEffects.length]);
+
+  // Hydrate localStorage-dependent state after mount to avoid SSR mismatch
+  useEffect(() => {
+    useEffectsStore.getState().hydrateFavorites();
+    useEffectsStore.getState().hydrateRecentlyViewed();
+    useEffectsStore.getState().hydrateTheme();
+    useEffectsStore.getState().hydrateSearchHistory();
+  }, []);
+
+  // Mark as loaded after mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, setVisibleCount]);
 
   // URL hash handling for effect sharing
   useEffect(() => {
@@ -368,7 +425,6 @@ export default function HomePage() {
       const effectId = hash.replace('#effect=', '');
       const effectExists = effects.some((e) => e.id === effectId);
       if (effectExists) {
-        // Small delay to let the page render first
         setTimeout(() => setSelectedEffectId(effectId), 300);
       }
     }
@@ -379,7 +435,6 @@ export default function HomePage() {
     if (selectedEffectId) {
       window.location.hash = `effect=${selectedEffectId}`;
     } else {
-      // Only clear hash if it was set by us
       if (window.location.hash.startsWith('#effect=')) {
         window.location.hash = '';
       }
@@ -389,11 +444,8 @@ export default function HomePage() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when typing in input
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-      // Don't intercept when modal is open
       if (useEffectsStore.getState().selectedEffectId) return;
-      // Don't intercept when compare modal is open
       if (useEffectsStore.getState().compareModalOpen) return;
 
       const currentFiltered = filteredEffects;
@@ -437,20 +489,28 @@ export default function HomePage() {
   }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, setFocusedEffectIndex]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-gray-100">
-      {/* Top section: Header */}
-      <header className="w-full border-b border-gray-800/30 bg-[#0a0a0a] sticky top-0 z-30">
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+      {/* Skip navigation link */}
+      <a href="#main-content" className="skip-nav">
+        Skip to main content
+      </a>
+
+      {/* Top section: Header with glass morphism */}
+      <header className={`w-full border-b sticky top-0 z-30 glass ${isDark ? 'border-gray-800/30' : 'border-gray-200/60'}`}>
+        {/* Animated gradient border under header */}
+        <div className="header-animated-border" />
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6">
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2 mb-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 text-sm"
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm ${isDark ? 'bg-[#111] border-gray-800 text-gray-400' : 'bg-white border-gray-200 text-gray-600'}`}
+              aria-label="Open category menu"
             >
               <Menu className="w-4 h-4" />
               Categories
             </button>
-            <span className="text-xs text-gray-600">
+            <span className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
               {filteredEffects.length} effects
             </span>
           </div>
@@ -464,12 +524,24 @@ export default function HomePage() {
         <Sidebar />
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 px-3 sm:px-4 md:px-6 py-4">
+        <main id="main-content" role="main" className="flex-1 min-w-0 px-3 sm:px-4 md:px-6 py-4">
           <FilterToolbar />
 
           {/* Effects grid / list */}
           <div className="mt-4">
-            {filteredEffects.length === 0 ? (
+            {!isLoaded ? (
+              // Show skeleton while loading
+              <div
+                className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                style={{
+                  gridTemplateColumns: `repeat(auto-fill, minmax(${Math.max(200, cardSize * 2.2)}px, 1fr))`,
+                }}
+              >
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <CardSkeleton key={i} />
+                ))}
+              </div>
+            ) : filteredEffects.length === 0 ? (
               <EmptyState />
             ) : viewMode === 'grid' ? (
               <div
@@ -479,7 +551,7 @@ export default function HomePage() {
                 }}
               >
                 <AnimatePresence mode="popLayout">
-                  {filteredEffects.map((effect, index) => (
+                  {visibleEffects.map((effect, index) => (
                     <EffectCard
                       key={effect.id}
                       effect={effect}
@@ -492,7 +564,7 @@ export default function HomePage() {
             ) : (
               <div className="flex flex-col gap-2">
                 <AnimatePresence mode="popLayout">
-                  {filteredEffects.map((effect, index) => (
+                  {visibleEffects.map((effect, index) => (
                     <EffectCard
                       key={effect.id}
                       effect={effect}
@@ -501,6 +573,28 @@ export default function HomePage() {
                     />
                   ))}
                 </AnimatePresence>
+              </div>
+            )}
+
+            {/* Load More at bottom of grid */}
+            {isLoaded && visibleCount < filteredEffects.length && (
+              <div className="flex items-center justify-center gap-3 py-8">
+                <button
+                  onClick={() => useEffectsStore.getState().loadMore()}
+                  className="flex items-center gap-2 px-8 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-medium hover:bg-emerald-500/20 transition-all"
+                >
+                  Load More (+24)
+                </button>
+                <button
+                  onClick={() => useEffectsStore.getState().showAll()}
+                  className={`flex items-center gap-2 px-8 py-3 border rounded-xl text-sm font-medium transition-all ${
+                    isDark
+                      ? 'bg-[#111] border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
+                      : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Show All ({filteredEffects.length})
+                </button>
               </div>
             )}
           </div>
@@ -516,6 +610,7 @@ export default function HomePage() {
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             onClick={() => setCompareModalOpen(true)}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-5 py-3 bg-emerald-500 text-black rounded-xl font-semibold text-sm hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/30"
+            aria-label={`Compare ${compareIds.length} effects`}
           >
             <GitCompare className="w-4 h-4" />
             Compare ({compareIds.length})

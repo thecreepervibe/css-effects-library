@@ -43,10 +43,12 @@ interface EffectsStore {
   favorites: string[];
   toggleFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
+  hydrateFavorites: () => void;
 
   // Recently viewed
   recentlyViewed: string[];
   addRecentlyViewed: (id: string) => void;
+  hydrateRecentlyViewed: () => void;
 
   // Compare mode
   compareIds: string[];
@@ -63,6 +65,24 @@ interface EffectsStore {
   // Keyboard navigation - focused effect index in the filtered list
   focusedEffectIndex: number | null;
   setFocusedEffectIndex: (index: number | null) => void;
+
+  // Theme
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+  setTheme: (theme: 'dark' | 'light') => void;
+  hydrateTheme: () => void;
+
+  // Search history
+  searchHistory: string[];
+  addSearchHistory: (query: string) => void;
+  clearSearchHistory: () => void;
+  hydrateSearchHistory: () => void;
+
+  // Pagination / visible count
+  visibleCount: number;
+  setVisibleCount: (count: number) => void;
+  loadMore: () => void;
+  showAll: () => void;
 }
 
 function loadFromLocalStorage<T>(key: string, fallback: T): T {
@@ -130,8 +150,8 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   selectedCollection: null,
   setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all' } : { selectedCollection: null }),
 
-  // Favorites
-  favorites: loadFromLocalStorage('css-effects-favorites', []),
+  // Favorites - initialize empty to avoid hydration mismatch, hydrate from localStorage in useEffect
+  favorites: [],
   toggleFavorite: (id) =>
     set((state) => {
       const newFavorites = state.favorites.includes(id)
@@ -141,9 +161,13 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
       return { favorites: newFavorites };
     }),
   isFavorite: (id) => get().favorites.includes(id),
+  hydrateFavorites: () => {
+    const stored = loadFromLocalStorage<string[]>('css-effects-favorites', []);
+    if (stored.length > 0) set({ favorites: stored });
+  },
 
-  // Recently viewed
-  recentlyViewed: loadFromLocalStorage('css-effects-recently-viewed', []),
+  // Recently viewed - initialize empty to avoid hydration mismatch
+  recentlyViewed: [],
   addRecentlyViewed: (id) =>
     set((state) => {
       const filtered = state.recentlyViewed.filter((r) => r !== id);
@@ -151,6 +175,10 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
       saveToLocalStorage('css-effects-recently-viewed', newRecent);
       return { recentlyViewed: newRecent };
     }),
+  hydrateRecentlyViewed: () => {
+    const stored = loadFromLocalStorage<string[]>('css-effects-recently-viewed', []);
+    if (stored.length > 0) set({ recentlyViewed: stored });
+  },
 
   // Compare mode
   compareIds: [],
@@ -176,4 +204,55 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   // Keyboard navigation
   focusedEffectIndex: null,
   setFocusedEffectIndex: (index) => set({ focusedEffectIndex: index }),
+
+  // Theme
+  theme: 'dark',
+  toggleTheme: () =>
+    set((state) => {
+      const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+      saveToLocalStorage('css-effects-theme', newTheme);
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+      }
+      return { theme: newTheme };
+    }),
+  setTheme: (theme) => {
+    saveToLocalStorage('css-effects-theme', theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
+    set({ theme });
+  },
+  hydrateTheme: () => {
+    const stored = loadFromLocalStorage<'dark' | 'light'>('css-effects-theme', 'dark');
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', stored === 'dark');
+    }
+    set({ theme: stored });
+  },
+
+  // Search history
+  searchHistory: [],
+  addSearchHistory: (query) =>
+    set((state) => {
+      if (!query.trim()) return state;
+      const filtered = state.searchHistory.filter((h) => h !== query.trim());
+      const newHistory = [query.trim(), ...filtered].slice(0, 10);
+      saveToLocalStorage('css-effects-search-history', newHistory);
+      return { searchHistory: newHistory };
+    }),
+  clearSearchHistory: () => {
+    saveToLocalStorage('css-effects-search-history', []);
+    set({ searchHistory: [] });
+  },
+  hydrateSearchHistory: () => {
+    const stored = loadFromLocalStorage<string[]>('css-effects-search-history', []);
+    if (stored.length > 0) set({ searchHistory: stored });
+  },
+
+  // Pagination
+  visibleCount: 24,
+  setVisibleCount: (count) => set({ visibleCount: count }),
+  loadMore: () => set((state) => ({ visibleCount: state.visibleCount + 24 })),
+  showAll: () => set({ visibleCount: 9999 }),
 }));

@@ -4,70 +4,55 @@ import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2 } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
 // Enhanced syntax highlighting for CSS code
 function highlightCSS(code: string): string {
   return code
-    // Comments
     .replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#6b7280;font-style:italic">$1</span>')
-    // @ rules and keyframes name
     .replace(/(@[\w-]+)/g, '<span style="color:#c084fc">$1</span>')
-    // Selectors (., #, :, [ at start of line)
     .replace(/^([.#:@\[][\w\-"'=\\\s]*)(?=\s*\{)/gm, '<span style="color:#67e8f9">$1</span>')
-    // Property names before colon (but not inside values)
     .replace(/^(\s*)([\w-]+)(\s*:)/gm, '$1<span style="color:#93c5fd">$2</span>$3')
-    // Numeric values with units
     .replace(/(\b\d+\.?\d*)(px|rem|em|%|deg|s|ms|fr|vh|vw|turn|cm|mm|in|pt|pc)/g, '<span style="color:#fbbf24">$1$2</span>')
-    // Hex colors
     .replace(/(#[0-9a-fA-F]{3,8})\b/g, '<span style="color:#f472b6">$1</span>')
-    // RGB/RGBA/HSL functions
     .replace(/\b(rgba?|hsla?)\s*\(/g, '<span style="color:#f472b6">$1(</span>')
-    // Keywords
     .replace(/\b(infinite|ease|linear|alternate|alternate-reverse|forwards|backwards|both|none|auto|transparent|solid|dashed|dotted|hidden|visible|relative|absolute|fixed|sticky|flex|grid|block|inline|inline-block|center|space-between|space-around|space-evenly|column|row|wrap|nowrap|inherit|initial|unset|ease-in-out|ease-in|ease-out|step-end|step-start|normal|pointer|collapse|separate|cover|contain|scroll|no-repeat|border-box|content-box|bold|italic|uppercase|lowercase|capitalize|baseline|middle|top|bottom|left|right|start|end|stretch|scale|rotate|translate|skew|matrix|perspective|currentcolor|evenodd|nonzero)\b/g, '<span style="color:#34d399">$1</span>')
-    // !important
     .replace(/(!important)/g, '<span style="color:#f87171;font-weight:bold">$1</span>')
-    // String values
     .replace(/(["'])([^"']*)\1/g, '<span style="color:#fbbf24">$1$2$1</span>')
-    // Braces
     .replace(/([{}])/g, '<span style="color:#9ca3af">$1</span>');
 }
 
 function highlightHTML(code: string): string {
   return code
-    // Tags
     .replace(/(&lt;|<)(\/?)([\w-]+)/g, '$1$2<span style="color:#f472b6">$3</span>')
-    // Attribute names
     .replace(/([\w-]+)(=)/g, '<span style="color:#93c5fd">$1</span><span style="color:#9ca3af">$2</span>')
-    // Attribute values
     .replace(/(".*?")/g, '<span style="color:#fbbf24">$1</span>')
-    // Closing bracket
     .replace(/(\/?>)/g, '<span style="color:#9ca3af">$1</span>')
-    // Comments
     .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span style="color:#6b7280;font-style:italic">$1</span>');
 }
 
-function addLineNumbers(code: string): string {
+function addLineNumbers(code: string, isDark: boolean): string {
   const lines = code.split('\n');
   const maxLineNum = lines.length.toString().length;
   return lines
     .map((line, i) => {
       const num = (i + 1).toString().padStart(maxLineNum, ' ');
-      return `<span class="text-gray-600 select-none pr-4 border-r border-gray-800/50 mr-4 inline-block" style="min-width:${maxLineNum + 1}ch">${num}</span>${line}`;
+      return `<span class="${isDark ? 'text-gray-600' : 'text-gray-400'} select-none pr-4 border-r ${isDark ? 'border-gray-800/50' : 'border-gray-200'} mr-4 inline-block" style="min-width:${maxLineNum + 1}ch">${num}</span>${line}`;
     })
     .join('\n');
 }
 
 // Inner modal content - resets via key when effect changes
 function ModalContent({ effect }: { effect: CSSEffect }) {
-  const { setSelectedEffectId } = useEffectsStore();
+  const { setSelectedEffectId, theme } = useEffectsStore();
   const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const isDark = theme === 'dark';
 
   const injectPreview = useCallback(() => {
     if (!effect || !previewRef.current) return;
@@ -187,6 +172,58 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
     toast.success('Share URL copied to clipboard!', { duration: 2000 });
   };
 
+  const handleExportHTML = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${effect.name} - CSS Effect</title>
+  <style>
+    /* Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Effect CSS */
+${effect.cssCode}
+  </style>
+</head>
+<body>
+  ${effect.htmlCode}
+</body>
+</html>`;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${effect.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('HTML file exported!', { duration: 2000 });
+  };
+
+  const handleExportCSS = () => {
+    const blob = new Blob([effect.cssCode], { type: 'text/css' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${effect.id}.css`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSS file exported!', { duration: 2000 });
+  };
+
   const difficultyColors = {
     beginner: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
     intermediate: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
@@ -211,13 +248,13 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
         onClick={() => setSelectedEffectId(null)}
       />
 
-      {/* Modal with gradient border */}
+      {/* Modal with glass morphism */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`fixed z-50 overflow-hidden flex flex-col ${
+        className={`fixed z-50 overflow-hidden flex flex-col glass-modal rounded-2xl ${
           isFullscreen
             ? 'inset-2'
             : 'inset-4 md:inset-8 lg:inset-16'
@@ -232,15 +269,15 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
             backgroundSize: '300% 300%',
           }}
         >
-          <div className="w-full h-full bg-[#0f0f1a] rounded-2xl" />
+          <div className={`w-full h-full rounded-2xl ${isDark ? 'bg-[#0f0f1a]' : 'bg-white/95'}`} />
         </div>
 
-        <div className="relative flex flex-col h-full bg-[#0f0f1a] rounded-2xl overflow-hidden">
+        <div className={`relative flex flex-col h-full rounded-2xl overflow-hidden ${isDark ? 'bg-[#0f0f1a]' : 'bg-white/95'}`}>
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800/50">
+          <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-white">{effect.name}</h2>
+                <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{effect.name}</h2>
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
                   {effect.difficulty}
                 </span>
@@ -250,28 +287,66 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">{effect.description}</p>
+              <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
             </div>
             <div className="flex items-center gap-2">
+              {/* Export buttons */}
+              <button
+                onClick={handleExportHTML}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                  isDark
+                    ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                    : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
+                }`}
+                title="Export as HTML file"
+                aria-label="Export as HTML file"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <button
+                onClick={handleExportCSS}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                  isDark
+                    ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                    : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
+                }`}
+                title="Export CSS only"
+                aria-label="Export CSS only"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">CSS Only</span>
+              </button>
               {/* Share button */}
               <button
                 onClick={handleShare}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all text-xs"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                  isDark
+                    ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
+                    : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
+                }`}
                 title="Copy share URL"
+                aria-label="Share effect URL"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Share</span>
               </button>
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                className={`p-2 rounded-lg transition-all ${
+                  isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                }`}
                 title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen preview'}
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen preview'}
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => setSelectedEffectId(null)}
-                className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                className={`p-2 rounded-lg transition-all ${
+                  isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+                aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -279,7 +354,7 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
           </div>
 
           {/* Tabs with icons */}
-          <div className="flex border-b border-gray-800/50">
+          <div className={`flex border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
             {tabConfig.map((tab) => (
               <button
                 key={tab.id}
@@ -287,7 +362,7 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
                 className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? 'text-emerald-400 border-b-2 border-emerald-400'
-                    : 'text-gray-500 hover:text-gray-300'
+                    : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -299,12 +374,14 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
           {/* Content */}
           <div className="flex-1 overflow-auto custom-scrollbar">
             {activeTab === 'preview' && (
-              <div className={`flex items-center justify-center p-10 bg-[#0a0a0a] relative ${
-                isFullscreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[400px]'
-              }`}>
+              <div className={`flex items-center justify-center p-10 relative ${
+                isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
+              } ${isFullscreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[400px]'}`}>
                 <div className="absolute inset-0 opacity-[0.03]"
                   style={{
-                    backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+                    backgroundImage: isDark
+                      ? 'radial-gradient(circle, #fff 1px, transparent 1px)'
+                      : 'radial-gradient(circle, #000 1px, transparent 1px)',
                     backgroundSize: '16px 16px',
                   }}
                 />
@@ -317,12 +394,13 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
                 <button
                   onClick={() => handleCopy(effect.cssCode, 'css')}
                   className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
+                  aria-label="Copy CSS code"
                 >
                   {copied === 'css' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   {copied === 'css' ? 'Copied!' : 'Copy CSS'}
                 </button>
-                <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
-                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightCSS(effect.cssCode.replace(/</g, '&lt;').replace(/>/g, '&gt;'))) }} />
+                <pre className={`p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 ${isDark ? 'bg-[#0a0a0a] text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
+                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightCSS(effect.cssCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')), isDark) }} />
                 </pre>
               </div>
             )}
@@ -332,21 +410,22 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
                 <button
                   onClick={() => handleCopy(effect.htmlCode, 'html')}
                   className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
+                  aria-label="Copy HTML code"
                 >
                   {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   {copied === 'html' ? 'Copied!' : 'Copy HTML'}
                 </button>
-                <pre className="p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0a0a] m-0">
-                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;'))) }} />
+                <pre className={`p-6 text-sm font-mono overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 ${isDark ? 'bg-[#0a0a0a] text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
+                  <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')), isDark) }} />
                 </pre>
               </div>
             )}
           </div>
 
           {/* Tags footer */}
-          <div className="px-6 py-3 border-t border-gray-800/50 flex flex-wrap gap-2 items-center">
+          <div className={`px-6 py-3 border-t flex flex-wrap gap-2 items-center ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
             {effect.tags.map((tag) => (
-              <span key={tag} className="text-[11px] px-2 py-0.5 bg-[#1a1a2e] text-gray-500 rounded-full">
+              <span key={tag} className={`text-[11px] px-2 py-0.5 rounded-full ${isDark ? 'bg-[#1a1a2e] text-gray-500' : 'bg-gray-100 text-gray-500'}`}>
                 {tag}
               </span>
             ))}
@@ -354,6 +433,7 @@ function ModalContent({ effect }: { effect: CSSEffect }) {
             <button
               onClick={() => handleCopy(effect.cssCode + '\n\n' + effect.htmlCode, 'all')}
               className="flex items-center gap-1.5 px-5 py-2 bg-emerald-500 text-black rounded-lg text-xs font-semibold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+              aria-label="Copy all code"
             >
               {copied === 'all' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied === 'all' ? 'Copied!' : 'Copy All Code'}
