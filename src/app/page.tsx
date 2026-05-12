@@ -550,6 +550,8 @@ export default function HomePage() {
     setVisibleCount,
     theme,
     selectedFeatured,
+    selectedUserCollection,
+    userCollections,
   } = useEffectsStore();
 
   const isDark = theme === 'dark';
@@ -571,6 +573,14 @@ export default function HomePage() {
       const col = collections.find((c) => c.id === selectedCollection);
       if (col) {
         filtered = filtered.filter((e) => col.effectIds.includes(e.id));
+      }
+    }
+
+    // User collections filter
+    if (selectedUserCollection) {
+      const userCol = userCollections.find((c) => c.id === selectedUserCollection);
+      if (userCol) {
+        filtered = filtered.filter((e) => userCol.effectIds.includes(e.id));
       }
     }
 
@@ -596,7 +606,7 @@ export default function HomePage() {
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, selectedUserCollection, userCollections]);
 
   // Apply pagination - slice the visible effects
   const visibleEffects = useMemo(() => {
@@ -616,6 +626,9 @@ export default function HomePage() {
     useEffectsStore.getState().hydrateSearchHistory();
     useEffectsStore.getState().hydrateRatings();
     useEffectsStore.getState().hydrateOnboarded();
+    useEffectsStore.getState().hydrateUserCollections();
+    useEffectsStore.getState().hydrateBookmarks();
+    useEffectsStore.getState().hydratePreviewDarkMode();
   }, []);
 
   // Mark as loaded after mount
@@ -627,7 +640,7 @@ export default function HomePage() {
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(24);
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, setVisibleCount]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, selectedUserCollection, setVisibleCount]);
 
   // URL hash handling for effect sharing
   useEffect(() => {
@@ -697,7 +710,7 @@ export default function HomePage() {
   // Reset focused index when filters change
   useEffect(() => {
     setFocusedEffectIndex(null);
-  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, setFocusedEffectIndex]);
+  }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, selectedUserCollection, setFocusedEffectIndex]);
 
   return (
     <div className={`min-h-screen flex flex-col animated-bg ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>

@@ -101,7 +101,7 @@ function useAnimatedNumber(target: number, duration: number = 1500) {
   return value;
 }
 
-// Animated stat pill component
+// Animated stat pill component with pulse glow
 function AnimatedStatPill({ icon: Icon, label, targetValue, color, gradientFrom, gradientTo, isDark }: {
   icon: typeof Sparkles;
   label: string;
@@ -117,11 +117,65 @@ function AnimatedStatPill({ icon: Icon, label, targetValue, color, gradientFrom,
                        animatedValue.toString();
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${gradientFrom} ${gradientTo} ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${gradientFrom} ${gradientTo} stat-pill-glow ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
       <Icon className={`w-4 h-4 ${color} opacity-70`} />
       <span className={`${color} font-bold text-sm`}>{displayValue}</span>
       <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{label}</span>
     </div>
+  );
+}
+
+// Typing effect component for subtitle
+function TypingSubtitle({ phrases, isDark }: { phrases: string[]; isDark: boolean }) {
+  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = phrases[currentPhraseIndex];
+    
+    if (isPaused) {
+      const pauseTimer = setTimeout(() => {
+        setIsPaused(false);
+        setIsTyping(false);
+      }, 2000);
+      return () => clearTimeout(pauseTimer);
+    }
+
+    if (isTyping) {
+      if (displayText.length < currentPhrase.length) {
+        const timer = setTimeout(() => {
+          setDisplayText(currentPhrase.slice(0, displayText.length + 1));
+        }, 40);
+        return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          setIsPaused(true);
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      if (displayText.length > 0) {
+        const timer = setTimeout(() => {
+          setDisplayText(displayText.slice(0, -1));
+        }, 25);
+        return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => {
+          setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length);
+          setIsTyping(true);
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [displayText, isTyping, isPaused, currentPhraseIndex, phrases]);
+
+  return (
+    <span className={`text-sm tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+      {displayText}
+      <span className="typing-cursor" />
+    </span>
   );
 }
 
@@ -131,6 +185,12 @@ export function Header() {
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const isDark = theme === 'dark';
+
+  const typingPhrases = useMemo(() => [
+    'A curated collection of beautiful CSS effects',
+    'Copy, paste, and create magic',
+    '198 pure CSS effects ready to use',
+  ], []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -281,9 +341,11 @@ export function Header() {
         </span>{' '}
         Library
       </h1>
-      <p className={`max-w-2xl mx-auto mb-7 text-sm tracking-wide relative z-10 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-        A curated collection of beautiful CSS effects with live preview &amp; ready-to-use code. Copy, paste, and create magic. ✨
-      </p>
+      
+      {/* Animated typing subtitle */}
+      <div className={`max-w-2xl mx-auto mb-7 relative z-10 min-h-[28px] ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+        <TypingSubtitle phrases={typingPhrases} isDark={isDark} />
+      </div>
 
       {/* Search Bar - full width on mobile */}
       <div className="flex items-center gap-3 max-w-lg mx-auto mb-6 px-2 sm:px-0 relative z-10">
@@ -460,7 +522,7 @@ export function Header() {
         </button>
       </div>
 
-      {/* Stats Row with animated counters */}
+      {/* Stats Row with animated counters + pulse glow */}
       <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
         <AnimatedStatPill
           icon={Sparkles}

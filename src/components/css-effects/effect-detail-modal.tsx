@@ -2,9 +2,9 @@
 
 import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
-import { useEffectsStore, getEffectViews, getCategoryColor, getSimulatedRating } from '@/lib/effects-store';
+import { useEffectsStore, getEffectViews, getCategoryColor, getSimulatedRating, minifyCSS } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, BarChart3, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, BarChart3, ThumbsUp, ThumbsDown, Sun, Moon, FolderPlus, XCircle } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -121,13 +121,15 @@ function analyzeCSS(cssCode: string) {
 
 // Inner modal content - resets via key when effect changes
 function ModalContent({ effect }: { effect: CSSEffect }) {
-  const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss, ratings, rateEffect } = useEffectsStore();
+  const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss, ratings, rateEffect, previewDarkMode, setPreviewDarkMode, userCollections, addUserCollection, addEffectToCollection, COLLECTION_COLORS } = useEffectsStore();
   const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground' | 'statistics'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [tabKey, setTabKey] = useState(0);
   const [ratingAnim, setRatingAnim] = useState<'up' | 'down' | null>(null);
+  const [showCollectionMenu, setShowCollectionMenu] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
   const previewRef = useRef<HTMLDivElement>(null);
   const playgroundPreviewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
@@ -424,6 +426,23 @@ ${effect.cssCode}
     toast.success('CSS file exported!', { duration: 2000 });
   };
 
+  const handleExportMinifiedCSS = () => {
+    const originalSize = new Blob([effect.cssCode]).size;
+    const minified = minifyCSS(effect.cssCode);
+    const minifiedSize = new Blob([minified]).size;
+    const reduction = Math.round(((originalSize - minifiedSize) / originalSize) * 100);
+    const blob = new Blob([minified], { type: 'text/css' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${effect.id}.min.css`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Minified: ${(originalSize / 1024).toFixed(1)}KB → ${(minifiedSize / 1024).toFixed(1)}KB (${reduction}% smaller)`, { duration: 3000 });
+  };
+
   const handlePlaygroundReset = () => {
     setPlaygroundCss(effect.cssCode);
     toast.success('CSS reset to original', { duration: 1500 });
@@ -600,6 +619,19 @@ ${effect.cssCode}
                 <span className="hidden lg:inline">CSS</span>
               </button>
               <button
+                onClick={handleExportMinifiedCSS}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
+                  isDark
+                    ? 'text-gray-500 hover:text-amber-400 hover:bg-amber-500/10'
+                    : 'text-gray-400 hover:text-amber-600 hover:bg-amber-500/10'
+                }`}
+                title="Export minified CSS"
+                aria-label="Export minified CSS"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Minified</span>
+              </button>
+              <button
                 onClick={handleShare}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
                   isDark
@@ -612,6 +644,105 @@ ${effect.cssCode}
                 <Share2 className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Share</span>
               </button>
+              {/* Save to Collection button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowCollectionMenu(!showCollectionMenu)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
+                    isDark
+                      ? 'text-gray-500 hover:text-purple-400 hover:bg-purple-500/10'
+                      : 'text-gray-400 hover:text-purple-600 hover:bg-purple-500/10'
+                  }`}
+                  title="Save to collection"
+                  aria-label="Save to collection"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" />
+                  <span className="hidden lg:inline">Save</span>
+                </button>
+                <AnimatePresence>
+                  {showCollectionMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className={`absolute right-0 top-full mt-1 w-64 rounded-xl border shadow-xl z-50 overflow-hidden ${
+                        isDark ? 'bg-[#111] border-gray-800 shadow-black/30' : 'bg-white border-gray-200 shadow-gray-200/50'
+                      }`}
+                    >
+                      <div className={`px-3 py-2 border-b flex items-center justify-between ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                        <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Save to Collection</span>
+                        <button onClick={() => setShowCollectionMenu(false)} className={`${isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-400 hover:text-gray-600'}`} aria-label="Close menu">
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                        {userCollections.length === 0 && (
+                          <div className={`px-3 py-3 text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>No collections yet. Create one below.</div>
+                        )}
+                        {userCollections.map((col) => {
+                          const isInCollection = col.effectIds.includes(effect.id);
+                          return (
+                            <button
+                              key={col.id}
+                              onClick={() => {
+                                if (!isInCollection) {
+                                  addEffectToCollection(col.id, effect.id);
+                                  toast.success(`Added to "${col.name}"`, { duration: 2000 });
+                                }
+                                setShowCollectionMenu(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                                isInCollection
+                                  ? isDark ? 'text-emerald-400/60' : 'text-emerald-600/60'
+                                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                              }`}
+                              disabled={isInCollection}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
+                              <span className="truncate">{col.name}</span>
+                              {isInCollection && <span className="ml-auto text-[9px] text-emerald-400/50">✓ saved</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className={`px-3 py-2 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+                        <div className="flex gap-1.5">
+                          <input
+                            value={newCollectionName}
+                            onChange={(e) => setNewCollectionName(e.target.value)}
+                            placeholder="New collection..."
+                            className={`flex-1 px-2 py-1 text-xs rounded-md border ${
+                              isDark ? 'bg-[#0a0a0a] border-gray-800 text-gray-200 placeholder:text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400'
+                            }`}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newCollectionName.trim()) {
+                                const color = COLLECTION_COLORS[userCollections.length % COLLECTION_COLORS.length];
+                                addUserCollection(newCollectionName.trim(), color);
+                                toast.success(`Collection "${newCollectionName.trim()}" created!`, { duration: 2000 });
+                                setNewCollectionName('');
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (newCollectionName.trim()) {
+                                const color = COLLECTION_COLORS[userCollections.length % COLLECTION_COLORS.length];
+                                addUserCollection(newCollectionName.trim(), color);
+                                toast.success(`Collection "${newCollectionName.trim()}" created!`, { duration: 2000 });
+                                setNewCollectionName('');
+                              }
+                            }}
+                            className="px-2 py-1 text-[10px] font-medium rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-colors"
+                            aria-label="Create collection"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
@@ -657,11 +788,25 @@ ${effect.cssCode}
           <div className="flex-1 overflow-auto custom-scrollbar modal-stagger-content tab-scale-in" key={tabKey}>
             {activeTab === 'preview' && (
               <div className={`flex items-center justify-center p-10 relative ${
-                isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'
+                previewDarkMode ? 'bg-[#0a0a0a]' : 'bg-white'
               } ${isFullscreen ? 'min-h-[calc(100vh-180px)]' : 'min-h-[400px]'}`}>
+                {/* Dark/Light preview toggle */}
+                <button
+                  onClick={() => setPreviewDarkMode(!previewDarkMode)}
+                  className={`absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                    previewDarkMode
+                      ? 'bg-white/10 border-gray-700 text-gray-400 hover:text-amber-400 hover:border-amber-500/30'
+                      : 'bg-gray-100 border-gray-300 text-gray-600 hover:text-amber-600 hover:border-amber-400'
+                  }`}
+                  aria-label={previewDarkMode ? 'Switch to light preview' : 'Switch to dark preview'}
+                  title={previewDarkMode ? 'Preview on light background' : 'Preview on dark background'}
+                >
+                  {previewDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  {previewDarkMode ? 'Light' : 'Dark'}
+                </button>
                 <div className="absolute inset-0 opacity-[0.03]"
                   style={{
-                    backgroundImage: isDark
+                    backgroundImage: previewDarkMode
                       ? 'radial-gradient(circle, #fff 1px, transparent 1px)'
                       : 'radial-gradient(circle, #000 1px, transparent 1px)',
                     backgroundSize: '16px 16px',

@@ -17,6 +17,21 @@ export const featuredEffectIds: string[] = [
   'flip-card',
 ];
 
+// User Collection type
+export interface UserCollection {
+  id: string;
+  name: string;
+  effectIds: string[];
+  color: string;
+}
+
+// Bookmark Folder type
+export interface BookmarkFolder {
+  id: string;
+  name: string;
+  bookmarkIds: string[];
+}
+
 interface EffectsStore {
   // Search
   searchQuery: string;
@@ -123,6 +138,32 @@ interface EffectsStore {
   onboarded: boolean;
   setOnboarded: (val: boolean) => void;
   hydrateOnboarded: () => void;
+
+  // User Collections
+  userCollections: UserCollection[];
+  addUserCollection: (name: string, color: string) => void;
+  removeUserCollection: (id: string) => void;
+  addEffectToCollection: (collectionId: string, effectId: string) => void;
+  removeEffectFromCollection: (collectionId: string, effectId: string) => void;
+  selectedUserCollection: string | null;
+  setSelectedUserCollection: (id: string | null) => void;
+  hydrateUserCollections: () => void;
+
+  // Bookmarks & Bookmark Folders
+  bookmarks: string[];
+  toggleBookmark: (id: string) => void;
+  isBookmarked: (id: string) => boolean;
+  bookmarkFolders: BookmarkFolder[];
+  addBookmarkFolder: (name: string) => void;
+  removeBookmarkFolder: (id: string) => void;
+  addBookmarkToFolder: (folderId: string, bookmarkId: string) => void;
+  removeBookmarkFromFolder: (folderId: string, bookmarkId: string) => void;
+  hydrateBookmarks: () => void;
+
+  // Preview dark/light toggle
+  previewDarkMode: boolean;
+  setPreviewDarkMode: (dark: boolean) => void;
+  hydratePreviewDarkMode: () => void;
 }
 
 // Category color palette - deterministic color based on category ID
@@ -179,12 +220,58 @@ function saveToLocalStorage(key: string, value: unknown) {
   }
 }
 
+// CSS Minifier utility
+export function minifyCSS(css: string): string {
+  return css
+    // Remove comments
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    // Remove unnecessary whitespace around selectors and braces
+    .replace(/\s*{\s*/g, '{')
+    .replace(/\s*}\s*/g, '}')
+    .replace(/\s*;\s*/g, ';')
+    .replace(/\s*:\s*/g, ':')
+    .replace(/\s*,\s*/g, ',')
+    // Remove newlines and multiple spaces
+    .replace(/\n/g, '')
+    .replace(/\s+/g, ' ')
+    // Remove leading/trailing whitespace
+    .trim();
+}
+
+// Similarity score calculator for effect recommendations
+export function calculateSimilarity(
+  effectId1: string,
+  effectId2: string,
+  effects: { id: string; category: string; tags: string[]; difficulty: string }[]
+): number {
+  const e1 = effects.find(e => e.id === effectId1);
+  const e2 = effects.find(e => e.id === effectId2);
+  if (!e1 || !e2) return 0;
+
+  let score = 0;
+  // Same category: +3
+  if (e1.category === e2.category) score += 3;
+  // Shared tags: +1 each
+  const sharedTags = e1.tags.filter(t => e2.tags.includes(t));
+  score += sharedTags.length;
+  // Same difficulty: +1
+  if (e1.difficulty === e2.difficulty) score += 1;
+
+  return score;
+}
+
+// Color palette for user collections
+export const COLLECTION_COLORS = [
+  '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444',
+  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+];
+
 export const useEffectsStore = create<EffectsStore>((set, get) => ({
   searchQuery: '',
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   selectedCategory: 'all',
-  setSelectedCategory: (category) => set({ selectedCategory: category, selectedCollection: null, selectedFeatured: false }),
+  setSelectedCategory: (category) => set({ selectedCategory: category, selectedCollection: null, selectedFeatured: false, selectedUserCollection: null }),
 
   selectedDifficulty: 'all',
   setSelectedDifficulty: (difficulty) => set({ selectedDifficulty: difficulty }),
@@ -204,6 +291,7 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
     selectedCollection: null,
     searchQuery: '',
     selectedFeatured: false,
+    selectedUserCollection: null,
   }),
 
   viewMode: 'grid',
@@ -224,7 +312,7 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   selectedCollection: null,
-  setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all', selectedFeatured: false } : { selectedCollection: null }),
+  setSelectedCollection: (id) => set(id ? { selectedCollection: id, selectedCategory: 'all', selectedFeatured: false, selectedUserCollection: null } : { selectedCollection: null }),
 
   // Favorites - initialize empty to avoid hydration mismatch, hydrate from localStorage in useEffect
   favorites: [],
@@ -338,10 +426,9 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
     selectedFeatured: val,
     selectedCollection: 'featured',
     selectedCategory: 'all',
+    selectedUserCollection: null,
   } : {
     selectedFeatured: false,
-    // Don't reset selectedCollection or selectedCategory when unsetting featured
-    // - the caller may have already set them (e.g., handleCategoryClick sets category then calls this)
   }),
   toggleSelectedFeatured: () => {
     const current = get().selectedFeatured;
@@ -350,11 +437,11 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
         selectedFeatured: true,
         selectedCollection: 'featured',
         selectedCategory: 'all',
+        selectedUserCollection: null,
       });
     } else {
       set({
         selectedFeatured: false,
-        // Don't reset selectedCollection or selectedCategory when toggling off
       });
     }
   },
@@ -392,5 +479,129 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   hydrateOnboarded: () => {
     const stored = loadFromLocalStorage<boolean>('css-effects-onboarded', false);
     if (stored) set({ onboarded: true });
+  },
+
+  // User Collections
+  userCollections: [],
+  addUserCollection: (name, color) =>
+    set((state) => {
+      const newCollection: UserCollection = {
+        id: `user-${Date.now()}`,
+        name,
+        effectIds: [],
+        color,
+      };
+      const newCollections = [...state.userCollections, newCollection];
+      saveToLocalStorage('css-effects-user-collections', newCollections);
+      return { userCollections: newCollections };
+    }),
+  removeUserCollection: (id) =>
+    set((state) => {
+      const newCollections = state.userCollections.filter((c) => c.id !== id);
+      saveToLocalStorage('css-effects-user-collections', newCollections);
+      return { userCollections: newCollections, selectedUserCollection: state.selectedUserCollection === id ? null : state.selectedUserCollection };
+    }),
+  addEffectToCollection: (collectionId, effectId) =>
+    set((state) => {
+      const newCollections = state.userCollections.map((c) => {
+        if (c.id === collectionId && !c.effectIds.includes(effectId)) {
+          return { ...c, effectIds: [...c.effectIds, effectId] };
+        }
+        return c;
+      });
+      saveToLocalStorage('css-effects-user-collections', newCollections);
+      return { userCollections: newCollections };
+    }),
+  removeEffectFromCollection: (collectionId, effectId) =>
+    set((state) => {
+      const newCollections = state.userCollections.map((c) => {
+        if (c.id === collectionId) {
+          return { ...c, effectIds: c.effectIds.filter((id) => id !== effectId) };
+        }
+        return c;
+      });
+      saveToLocalStorage('css-effects-user-collections', newCollections);
+      return { userCollections: newCollections };
+    }),
+  selectedUserCollection: null,
+  setSelectedUserCollection: (id) => set(id ? {
+    selectedUserCollection: id,
+    selectedCategory: 'all',
+    selectedCollection: null,
+    selectedFeatured: false,
+  } : { selectedUserCollection: null }),
+  hydrateUserCollections: () => {
+    const stored = loadFromLocalStorage<UserCollection[]>('css-effects-user-collections', []);
+    if (stored.length > 0) set({ userCollections: stored });
+  },
+
+  // Bookmarks & Bookmark Folders
+  bookmarks: [],
+  toggleBookmark: (id) =>
+    set((state) => {
+      const newBookmarks = state.bookmarks.includes(id)
+        ? state.bookmarks.filter((b) => b !== id)
+        : [...state.bookmarks, id];
+      saveToLocalStorage('css-effects-bookmarks', newBookmarks);
+      return { bookmarks: newBookmarks };
+    }),
+  isBookmarked: (id) => get().bookmarks.includes(id),
+  bookmarkFolders: [],
+  addBookmarkFolder: (name) =>
+    set((state) => {
+      const newFolder: BookmarkFolder = {
+        id: `folder-${Date.now()}`,
+        name,
+        bookmarkIds: [],
+      };
+      const newFolders = [...state.bookmarkFolders, newFolder];
+      saveToLocalStorage('css-effects-bookmark-folders', newFolders);
+      return { bookmarkFolders: newFolders };
+    }),
+  removeBookmarkFolder: (id) =>
+    set((state) => {
+      const newFolders = state.bookmarkFolders.filter((f) => f.id !== id);
+      saveToLocalStorage('css-effects-bookmark-folders', newFolders);
+      return { bookmarkFolders: newFolders };
+    }),
+  addBookmarkToFolder: (folderId, bookmarkId) =>
+    set((state) => {
+      const newFolders = state.bookmarkFolders.map((f) => {
+        if (f.id === folderId && !f.bookmarkIds.includes(bookmarkId)) {
+          return { ...f, bookmarkIds: [...f.bookmarkIds, bookmarkId] };
+        }
+        return f;
+      });
+      saveToLocalStorage('css-effects-bookmark-folders', newFolders);
+      return { bookmarkFolders: newFolders };
+    }),
+  removeBookmarkFromFolder: (folderId, bookmarkId) =>
+    set((state) => {
+      const newFolders = state.bookmarkFolders.map((f) => {
+        if (f.id === folderId) {
+          return { ...f, bookmarkIds: f.bookmarkIds.filter((id) => id !== bookmarkId) };
+        }
+        return f;
+      });
+      saveToLocalStorage('css-effects-bookmark-folders', newFolders);
+      return { bookmarkFolders: newFolders };
+    }),
+  hydrateBookmarks: () => {
+    const storedBookmarks = loadFromLocalStorage<string[]>('css-effects-bookmarks', []);
+    const storedFolders = loadFromLocalStorage<BookmarkFolder[]>('css-effects-bookmark-folders', []);
+    if (storedBookmarks.length > 0 || storedFolders.length > 0) {
+      set({ bookmarks: storedBookmarks, bookmarkFolders: storedFolders });
+    }
+  },
+
+  // Preview dark/light toggle
+  previewDarkMode: true,
+  setPreviewDarkMode: (dark) => {
+    saveToLocalStorage('css-effects-preview-dark-mode', dark);
+    set({ previewDarkMode: dark });
+  },
+  hydratePreviewDarkMode: () => {
+    const stored = loadFromLocalStorage<boolean>('css-effects-preview-dark-mode', true);
+    set({ previewDarkMode: stored });
   },
 }));

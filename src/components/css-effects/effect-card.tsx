@@ -3,7 +3,7 @@
 import type { CSSEffect } from '@/lib/effects-data';
 import { useEffectsStore, getCategoryColor, getEffectViews } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star, Eye, Code2 } from 'lucide-react';
+import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star, Eye, Code2, Bookmark } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -27,12 +27,14 @@ function getStarCount(difficulty: string): number {
 }
 
 export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
-  const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds, theme, ratings } = useEffectsStore();
+  const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds, theme, ratings, bookmarks, toggleBookmark } = useEffectsStore();
   const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [heartAnimating, setHeartAnimating] = useState(false);
   const [checkAnimating, setCheckAnimating] = useState(false);
+  const [bookmarkAnimating, setBookmarkAnimating] = useState(false);
   const [showCodeTooltip, setShowCodeTooltip] = useState(false);
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
 
   const isFavorited = favorites.includes(effect.id);
   const isComparing = compareIds.includes(effect.id);
+  const isBookmarked = bookmarks.includes(effect.id);
   const complexity = getComplexity(effect.cssCode);
   const starCount = getStarCount(effect.difficulty);
   const isDark = theme === 'dark';
@@ -62,6 +65,18 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
     }
+  }, []);
+
+  // Ripple effect on click
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const id = Date.now();
+    setRipples(prev => [...prev, { id, x, y }]);
+    setTimeout(() => {
+      setRipples(prev => prev.filter(r => r.id !== id));
+    }, 600);
   }, []);
 
   // Inject CSS for the preview
@@ -191,6 +206,14 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     });
   };
 
+  const handleBookmark = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleBookmark(effect.id);
+    setBookmarkAnimating(true);
+    setTimeout(() => setBookmarkAnimating(false), 350);
+    toast(isBookmarked ? 'Bookmark removed' : 'Bookmarked! 🔖', { duration: 1500 });
+  };
+
   const handleCompare = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleCompare(effect.id);
@@ -318,6 +341,15 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
         )}
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Bookmark button */}
+          <button
+            onClick={handleBookmark}
+            aria-label={`Bookmark ${effect.name}`}
+            aria-pressed={isBookmarked}
+            className={`p-1.5 transition-colors ${isBookmarked ? 'text-amber-400' : isDark ? 'text-gray-600 hover:text-amber-400' : 'text-gray-400 hover:text-amber-400'} ${bookmarkAnimating ? 'bookmark-pop' : ''}`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+          </button>
           <button
             onClick={handleFavorite}
             aria-label={`Favorite ${effect.name}`}
@@ -347,7 +379,10 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
       initial={{ opacity: 0, y: 25, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4, delay: staggerDelay, ease: [0.25, 0.46, 0.45, 0.94] }}
-      onClick={() => setSelectedEffectId(effect.id)}
+      onClick={(e) => {
+        handleClick(e);
+        setSelectedEffectId(effect.id);
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow card-shine ${
@@ -367,19 +402,22 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
         }
       }}
     >
-      {/* Animated gradient border on hover */}
-      <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
-        style={{
-          padding: '1.5px',
-          background: 'linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981)',
-          backgroundSize: '300% 300%',
-          animation: 'gradient-border-spin 4s ease infinite',
-          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-        }}
-      />
+      {/* Animated gradient border on hover - rotating conic gradient */}
+      <div className="card-glow-border rounded-2xl" />
+
+      {/* Ripple effects */}
+      {ripples.map(ripple => (
+        <span
+          key={ripple.id}
+          className="card-ripple"
+          style={{
+            left: ripple.x - 20,
+            top: ripple.y - 20,
+            width: 40,
+            height: 40,
+          }}
+        />
+      ))}
 
       {/* Hover lift effect */}
       <div className="group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-emerald-500/10 transition-all duration-300 h-full flex flex-col">
@@ -426,7 +464,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             </span>
           </motion.div>
 
-          {/* Favorite button - top right with heart pop - WITH aria-pressed */}
+          {/* Favorite button - top right with heart pop */}
           <motion.button
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
@@ -441,6 +479,23 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
+          </motion.button>
+
+          {/* Bookmark button - top right, next to favorite */}
+          <motion.button
+            initial={false}
+            animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
+            transition={{ duration: 0.15, delay: 0.03 }}
+            onClick={handleBookmark}
+            aria-label={`Bookmark ${effect.name}`}
+            aria-pressed={isBookmarked}
+            className={`absolute top-2 right-11 z-20 p-1.5 rounded-lg backdrop-blur-sm transition-colors ${bookmarkAnimating ? 'bookmark-pop' : ''} ${
+              isBookmarked
+                ? 'bg-amber-500/20 text-amber-400'
+                : 'bg-black/40 text-gray-400 hover:text-amber-400'
+            }`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
           </motion.button>
 
           {/* Compare button - top left with checkmark draw */}
