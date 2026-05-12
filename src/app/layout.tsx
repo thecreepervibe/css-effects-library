@@ -50,6 +50,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground noise-overlay`}
+        suppressHydrationWarning
       >
         {/* Morphing blob backgrounds for visual depth */}
         <div className="morphing-blob-1" style={{ top: '10%', left: '5%' }} />

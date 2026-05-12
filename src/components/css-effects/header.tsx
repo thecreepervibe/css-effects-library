@@ -182,8 +182,10 @@ function TypingSubtitle({ phrases, isDark }: { phrases: string[]; isDark: boolea
 // Feature 1: Effect of the Day - deterministic selection based on date
 function EffectOfTheDay({ isDark }: { isDark: boolean }) {
   const { setSelectedEffectId } = useEffectsStore();
+  const [effectOfTheDay, setEffectOfTheDay] = useState<typeof effects[0] | null>(null);
 
-  const effectOfTheDay = useMemo(() => {
+  useEffect(() => {
+    // Compute on client only to avoid SSR timezone mismatch
     const today = new Date();
     const dateStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
     let hash = 0;
@@ -191,8 +193,10 @@ function EffectOfTheDay({ isDark }: { isDark: boolean }) {
       hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
       hash |= 0;
     }
-    return effects[Math.abs(hash) % effects.length];
+    setTimeout(() => setEffectOfTheDay(effects[Math.abs(hash) % effects.length]), 0);
   }, []);
+
+  if (!effectOfTheDay) return null;
 
   const catColor = getCategoryColor(effectOfTheDay.category);
 
@@ -284,9 +288,12 @@ export function Header() {
   const headerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark';
 
-  // Detect platform for shortcut hint
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
-  const shortcutHint = isMac ? '⌘K' : 'Ctrl+K';
+  // Detect platform for shortcut hint (client-only to avoid hydration mismatch)
+  const [shortcutHint, setShortcutHint] = useState('Ctrl+K');
+  useEffect(() => {
+    const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent);
+    setTimeout(() => setShortcutHint(isMac ? '⌘K' : 'Ctrl+K'), 0);
+  }, []);
 
   const typingPhrases = useMemo(() => [
     'A curated collection of beautiful CSS effects',

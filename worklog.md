@@ -840,3 +840,56 @@ Work Log:
 
 Stage Summary:
 - 40 new effects across tooltips, transitions, progress, notifications categories
+
+---
+Task ID: 14
+Agent: Main Agent (Hydration Error Fix)
+
+Task: Fix Next.js hydration mismatch error shown in browser console
+
+## Problem
+The CSS Effects Library website showed a hydration mismatch error in the browser. The error was caused by several server/client rendering differences:
+
+1. **Theme state**: Zustand store defaults to `theme: 'dark'` on server, but client localStorage might have `'light'` → different class names rendered
+2. **`navigator.userAgent` check**: `isMac` variable in header.tsx computed differently on server (`undefined`) vs client → different shortcut hint text
+3. **`new Date()` in EffectOfTheDay**: Server and client might be in different timezones → different effect selected → different `dangerouslySetInnerHTML` content
+4. **`CardSkeleton` using `isDark`**: The loading skeleton read theme from store, causing different HTML on server vs client
+
+## Fixes Applied
+
+### 1. page.tsx - Mounted state gate
+- Replaced `isLoaded` state with `mounted` state
+- `mounted` is only set to `true` AFTER all localStorage hydration is complete (in the same `useEffect`)
+- Before `mounted`, shows a neutral dark-themed skeleton (no `isDark` dependency)
+- After `mounted`, renders the full UI with correct theme
+
+### 2. header.tsx - Shortcut hint fix
+- Changed `isMac` from synchronous `typeof navigator !== 'undefined'` check to `useState` + `useEffect`
+- Default: `'Ctrl+K'` (same on server and client initially)
+- After mount: updates to `'⌘K'` on Mac devices via `setTimeout(() => setShortcutHint(...), 0)`
+
+### 3. header.tsx - EffectOfTheDay fix
+- Changed from `useMemo` (runs on both server and client) to `useState` + `useEffect` (client-only)
+- Returns `null` on server render (no HTML mismatch possible)
+- After mount: computes the effect-of-the-day and renders the banner
+
+### 4. CardSkeleton - Neutral theme
+- Removed `isDark` dependency from CardSkeleton
+- Always renders dark-themed skeleton (matches SSR default)
+- This ensures server and client render identical HTML for the loading state
+
+### 5. layout.tsx - suppressHydrationWarning
+- Added `suppressHydrationWarning` to `<body>` tag
+- Already present on `<html>` tag
+
+## Verification
+- `bun run lint` passes with 0 errors, 0 warnings
+- Dev server returns 200
+- No hydration error overlay in agent-browser
+- No console errors
+- Page renders correctly with professional appearance
+- VLM confirms: "No visible hydration error... The page looks professional and well-structured"
+
+## Unresolved Issues/Risks
+- None related to hydration
+- Previous notes about some CSS effect previews potentially not rendering perfectly in small card areas still apply

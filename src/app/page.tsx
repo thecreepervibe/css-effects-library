@@ -478,53 +478,49 @@ function EmptyState() {
   );
 }
 
-// Loading skeleton for cards - realistic shape matching actual card layout
+// Loading skeleton for cards - uses dark theme to match SSR default (avoids hydration mismatch)
 function CardSkeleton() {
-  const { theme } = useEffectsStore();
-  const isDark = theme === 'dark';
   return (
-    <div className={`rounded-2xl overflow-hidden ${isDark ? 'bg-[#111]' : 'bg-white border border-gray-200'}`}>
+    <div className="rounded-2xl overflow-hidden bg-[#111]">
       {/* Preview area skeleton */}
-      <div className={`h-40 relative skeleton-pulse ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
+      <div className="h-40 relative skeleton-pulse bg-gray-800/50">
         {/* Simulated dot grid */}
         <div className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: isDark
-              ? 'radial-gradient(circle, #fff 1px, transparent 1px)'
-              : 'radial-gradient(circle, #000 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
             backgroundSize: '12px 12px',
           }}
         />
       </div>
       {/* Complexity bar */}
-      <div className={`h-0.5 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/60'}`}>
-        <div className={`h-full w-1/3 skeleton-pulse ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-500/20'}`} />
+      <div className="h-0.5 bg-gray-800/50">
+        <div className="h-full w-1/3 skeleton-pulse bg-emerald-500/20" />
       </div>
       {/* Card info */}
       <div className="p-4 space-y-3">
         {/* Title + NEW badge */}
         <div className="flex items-center gap-2">
-          <div className={`h-4 rounded w-2/3 skeleton-pulse ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`} />
-          <div className={`h-4 rounded w-10 skeleton-pulse ${isDark ? 'bg-emerald-500/10' : 'bg-emerald-500/10'}`} />
+          <div className="h-4 rounded w-2/3 skeleton-pulse bg-gray-800/50" />
+          <div className="h-4 rounded w-10 skeleton-pulse bg-emerald-500/10" />
         </div>
         {/* Description */}
         <div className="space-y-1.5">
-          <div className={`h-3 rounded w-full skeleton-pulse ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`} />
-          <div className={`h-3 rounded w-4/5 skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
+          <div className="h-3 rounded w-full skeleton-pulse bg-gray-800/30" />
+          <div className="h-3 rounded w-4/5 skeleton-pulse bg-gray-800/20" />
         </div>
         {/* Difficulty + category row */}
         <div className="flex items-center gap-2">
-          <div className={`h-5 rounded-full w-16 skeleton-pulse ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`} />
-          <div className={`h-5 rounded-full w-20 skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
+          <div className="h-5 rounded-full w-16 skeleton-pulse bg-gray-800/30" />
+          <div className="h-5 rounded-full w-20 skeleton-pulse bg-gray-800/20" />
         </div>
         {/* Tags row */}
         <div className="flex items-center gap-1.5">
-          <div className={`h-4 rounded w-12 skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
-          <div className={`h-4 rounded w-14 skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
-          <div className={`h-4 rounded w-10 skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
+          <div className="h-4 rounded w-12 skeleton-pulse bg-gray-800/20" />
+          <div className="h-4 rounded w-14 skeleton-pulse bg-gray-800/20" />
+          <div className="h-4 rounded w-10 skeleton-pulse bg-gray-800/20" />
         </div>
         {/* Copy code button */}
-        <div className={`h-8 rounded-lg w-full skeleton-pulse ${isDark ? 'bg-gray-800/20' : 'bg-gray-100'}`} />
+        <div className="h-8 rounded-lg w-full skeleton-pulse bg-gray-800/20" />
       </div>
     </div>
   );
@@ -555,7 +551,7 @@ export default function HomePage() {
   } = useEffectsStore();
 
   const isDark = theme === 'dark';
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const filteredEffects = useMemo(() => {
     let filtered = effects;
@@ -629,12 +625,8 @@ export default function HomePage() {
     useEffectsStore.getState().hydrateUserCollections();
     useEffectsStore.getState().hydrateBookmarks();
     useEffectsStore.getState().hydratePreviewDarkMode();
-  }, []);
-
-  // Mark as loaded after mount
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
+    // Mark as mounted after hydration is complete
+    setMounted(true);
   }, []);
 
   // Reset visible count when filters change
@@ -756,8 +748,8 @@ export default function HomePage() {
 
           {/* Effects grid / list */}
           <div className="mt-4">
-            {!isLoaded ? (
-              // Show skeleton while loading
+            {!mounted ? (
+              // Show skeleton while loading (before hydration)
               <div
                 className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                 style={{
@@ -804,7 +796,7 @@ export default function HomePage() {
             )}
 
             {/* Load More at bottom of grid */}
-            {isLoaded && visibleCount < filteredEffects.length && (
+            {mounted && visibleCount < filteredEffects.length && (
               <div className="flex items-center justify-center gap-3 py-8">
                 <button
                   onClick={() => useEffectsStore.getState().loadMore()}
