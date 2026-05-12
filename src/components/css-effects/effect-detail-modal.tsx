@@ -2,9 +2,9 @@
 
 import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
-import { useEffectsStore, getEffectViews } from '@/lib/effects-store';
+import { useEffectsStore, getEffectViews, getCategoryColor, getSimulatedRating } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, Eye as EyeIcon } from 'lucide-react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, BarChart3, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -44,20 +44,99 @@ function addLineNumbers(code: string, isDark: boolean): string {
     .join('\n');
 }
 
+// CSS Statistics analyzer
+function analyzeCSS(cssCode: string) {
+  const lines = cssCode.split('\n').filter(l => l.trim().length > 0);
+  const totalLines = lines.length;
+
+  // Unique CSS properties
+  const propertyRegex = /^\s*([\w-]+)\s*:/gm;
+  const properties = new Set<string>();
+  let match;
+  while ((match = propertyRegex.exec(cssCode)) !== null) {
+    properties.add(match[1]);
+  }
+
+  // Keyframe animations
+  const keyframeMatches = cssCode.match(/@keyframes\s+[\w-]+/g) || [];
+  const keyframeCount = keyframeMatches.length;
+
+  // CSS selectors
+  const selectorRegex = /^([^@{}\/\n][^{]*)\{/gm;
+  const selectors = new Set<string>();
+  while ((match = selectorRegex.exec(cssCode)) !== null) {
+    selectors.add(match[1].trim());
+  }
+
+  // Property type distribution
+  const layoutProps = ['display', 'position', 'top', 'right', 'bottom', 'left', 'width', 'height', 'margin', 'padding', 'flex', 'grid', 'align', 'justify', 'gap', 'float', 'clear', 'overflow', 'z-index', 'transform', 'box-sizing'];
+  const colorProps = ['color', 'background', 'border-color', 'outline-color', 'box-shadow', 'text-shadow', 'filter', 'opacity', 'fill', 'stroke'];
+  const animationProps = ['animation', 'transition', 'keyframes', 'transform', 'will-change'];
+  const typographyProps = ['font', 'text', 'letter-spacing', 'line-height', 'word-spacing', 'white-space'];
+
+  let layoutCount = 0, colorCount = 0, animationCount = 0, typographyCount = 0, otherCount = 0;
+
+  properties.forEach((prop) => {
+    if (layoutProps.some(p => prop.includes(p))) layoutCount++;
+    else if (colorProps.some(p => prop.includes(p))) colorCount++;
+    else if (animationProps.some(p => prop.includes(p))) animationCount++;
+    else if (typographyProps.some(p => prop.includes(p))) typographyCount++;
+    else otherCount++;
+  });
+
+  const total = layoutCount + colorCount + animationCount + typographyCount + otherCount;
+
+  // Complexity score based on multiple factors
+  const complexityScore = Math.min(100, Math.round(
+    (totalLines * 0.8) +
+    (properties.size * 1.5) +
+    (keyframeCount * 10) +
+    (selectors.size * 2)
+  ));
+
+  // Browser compatibility estimate (simple heuristic)
+  const modernProps = ['container', 'has', 'is', 'where', 'nesting', 'subgrid', 'scroll-snap', 'aspect-ratio', 'clamp', 'min', 'max'];
+  let compatScore = 95;
+  modernProps.forEach(prop => {
+    if (cssCode.toLowerCase().includes(prop)) compatScore -= 5;
+  });
+  if (cssCode.includes('-webkit-') || cssCode.includes('-moz-') || cssCode.includes('-ms-')) compatScore = Math.min(compatScore + 5, 98);
+
+  return {
+    totalLines,
+    uniqueProperties: properties.size,
+    keyframeCount,
+    selectorCount: selectors.size,
+    propertyDistribution: {
+      layout: { count: layoutCount, pct: total > 0 ? Math.round((layoutCount / total) * 100) : 0 },
+      color: { count: colorCount, pct: total > 0 ? Math.round((colorCount / total) * 100) : 0 },
+      animation: { count: animationCount, pct: total > 0 ? Math.round((animationCount / total) * 100) : 0 },
+      typography: { count: typographyCount, pct: total > 0 ? Math.round((typographyCount / total) * 100) : 0 },
+      other: { count: otherCount, pct: total > 0 ? Math.round((otherCount / total) * 100) : 0 },
+    },
+    complexityScore,
+    compatScore: Math.max(compatScore, 60),
+  };
+}
+
 // Inner modal content - resets via key when effect changes
 function ModalContent({ effect }: { effect: CSSEffect }) {
-  const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss } = useEffectsStore();
-  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground'>('preview');
+  const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss, ratings, rateEffect } = useEffectsStore();
+  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground' | 'statistics'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [tabKey, setTabKey] = useState(0);
+  const [ratingAnim, setRatingAnim] = useState<'up' | 'down' | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const playgroundPreviewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const playgroundStyleRef = useRef<HTMLStyleElement | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDark = theme === 'dark';
+
+  const userRating = ratings[effect.id] || null;
+  const simulatedRating = getSimulatedRating(effect.id);
 
   const injectPreview = useCallback(() => {
     if (!effect || !previewRef.current) return;
@@ -358,12 +437,26 @@ ${effect.cssCode}
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const handleRate = (rating: 'up' | 'down') => {
+    rateEffect(effect.id, rating);
+    setRatingAnim(rating);
+    setTimeout(() => setRatingAnim(null), 350);
+    const current = ratings[effect.id];
+    if (current === rating) {
+      toast('Rating removed', { duration: 1500 });
+    } else {
+      toast(rating === 'up' ? '👍 Liked!' : '👎 Not for me', { duration: 1500 });
+    }
+  };
+
   const difficultyColors = {
     beginner: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
     intermediate: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
     advanced: 'bg-red-500/15 text-red-400 border-red-500/20',
   };
 
+  const catColor = getCategoryColor(effect.category);
+  const cssLines = effect.cssCode.split('\n').length;
   const viewCount = getEffectViews(effect.id);
   const formatViews = (count: number): string => {
     if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
@@ -375,7 +468,22 @@ ${effect.cssCode}
     { id: 'css' as const, label: 'CSS', icon: Code2 },
     { id: 'html' as const, label: 'HTML', icon: FileCode },
     { id: 'playground' as const, label: 'Playground', icon: Terminal },
+    { id: 'statistics' as const, label: 'Statistics', icon: BarChart3 },
   ];
+
+  // Related effects - same category or overlapping tags
+  const relatedEffects = effects
+    .filter(e => e.id !== effect.id)
+    .map(e => ({
+      effect: e,
+      score: (e.category === effect.category ? 2 : 0) + e.tags.filter(t => effect.tags.includes(t)).length,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map(r => r.effect);
+
+  // CSS statistics
+  const cssStats = analyzeCSS(effect.cssCode);
 
   return (
     <>
@@ -418,31 +526,56 @@ ${effect.cssCode}
         </div>
 
         <div className={`relative flex flex-col h-full rounded-2xl overflow-hidden ${isDark ? 'bg-[#0f0f1a]' : 'bg-white/95'}`}>
-          {/* Header - staggered reveal */}
-          <div className={`flex items-center justify-between px-6 py-4 border-b modal-stagger-header ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{effect.name}</h2>
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
-                  {effect.difficulty}
-                </span>
-                {effect.isNew && (
-                  <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded new-badge-pulse">
-                    NEW
+          {/* Header - with gradient background, enhanced design */}
+          <div className={`flex items-center justify-between px-6 py-4 border-b modal-stagger-header modal-header-gradient ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {/* Small preview thumbnail */}
+              <div
+                className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 flex items-center justify-center border ${
+                  isDark ? 'bg-[#0a0a0a] border-gray-800/30' : 'bg-gray-50 border-gray-200'
+                }`}
+                dangerouslySetInnerHTML={{ __html: effect.htmlCode.substring(0, 200) }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className={`text-lg font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{effect.name}</h2>
+                  {/* Category color badge - more prominent */}
+                  <span
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize"
+                    style={{ backgroundColor: `${catColor}18`, color: catColor, borderColor: `${catColor}30` }}
+                  >
+                    {effect.category.replace('-', ' ')}
                   </span>
-                )}
-                <span className={`text-[10px] flex items-center gap-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  <EyeIcon className="w-3 h-3" />
-                  {formatViews(viewCount)} views
-                </span>
+                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${difficultyColors[effect.difficulty]}`}>
+                    {effect.difficulty}
+                  </span>
+                  {effect.isNew && (
+                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded new-badge-pulse">
+                      NEW
+                    </span>
+                  )}
+                  {/* Line count indicator */}
+                  <span className={`text-[10px] flex items-center gap-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <Code2 className="w-3 h-3" />
+                    {cssLines} lines
+                  </span>
+                  <span className={`text-[10px] flex items-center gap-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <Eye className="w-3 h-3" />
+                    {formatViews(viewCount)} views
+                  </span>
+                  {/* Rating percentage */}
+                  <span className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {simulatedRating}% positive
+                  </span>
+                </div>
+                <p className={`text-xs mt-1 truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
               </div>
-              <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{effect.description}</p>
             </div>
-            <div className="flex items-center gap-2">
-              {/* Export buttons */}
+            {/* Action buttons - grouped */}
+            <div className="flex items-center gap-1 shrink-0 ml-3">
               <button
                 onClick={handleExportHTML}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
                   isDark
                     ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
                     : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
@@ -451,11 +584,11 @@ ${effect.cssCode}
                 aria-label="Export as HTML file"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Export</span>
+                <span className="hidden lg:inline">Export</span>
               </button>
               <button
                 onClick={handleExportCSS}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
                   isDark
                     ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
                     : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
@@ -464,12 +597,11 @@ ${effect.cssCode}
                 aria-label="Export CSS only"
               >
                 <FileDown className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">CSS Only</span>
+                <span className="hidden lg:inline">CSS</span>
               </button>
-              {/* Share button */}
               <button
                 onClick={handleShare}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-xs ${
                   isDark
                     ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10'
                     : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10'
@@ -478,8 +610,9 @@ ${effect.cssCode}
                 aria-label="Share effect URL"
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Share</span>
+                <span className="hidden lg:inline">Share</span>
               </button>
+              <div className={`w-px h-5 mx-1 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className={`p-2 rounded-lg transition-all ${
@@ -508,14 +641,14 @@ ${effect.cssCode}
               <button
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id); setTabKey(prev => prev + 1); }}
-                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all ${
                   activeTab === tab.id
                     ? 'text-emerald-400 border-b-2 border-emerald-400'
                     : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <tab.icon className="w-3.5 h-3.5" />
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
@@ -642,10 +775,190 @@ ${effect.cssCode}
                 </div>
               </div>
             )}
+
+            {activeTab === 'statistics' && (
+              <div className={`p-6 space-y-6 ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
+                {/* Overview stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total Lines', value: cssStats.totalLines, color: '#10b981' },
+                    { label: 'Unique Properties', value: cssStats.uniqueProperties, color: '#3b82f6' },
+                    { label: 'Keyframes', value: cssStats.keyframeCount, color: '#8b5cf6' },
+                    { label: 'Selectors', value: cssStats.selectorCount, color: '#f59e0b' },
+                  ].map((stat) => (
+                    <div key={stat.label} className={`p-4 rounded-xl border ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200'}`}>
+                      <div className="text-xs text-gray-500 mb-1">{stat.label}</div>
+                      <div className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Property type distribution */}
+                <div className={`p-5 rounded-xl border ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Property Distribution</h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Layout', ...cssStats.propertyDistribution.layout, color: '#10b981' },
+                      { label: 'Color', ...cssStats.propertyDistribution.color, color: '#3b82f6' },
+                      { label: 'Animation', ...cssStats.propertyDistribution.animation, color: '#8b5cf6' },
+                      { label: 'Typography', ...cssStats.propertyDistribution.typography, color: '#f59e0b' },
+                      { label: 'Other', ...cssStats.propertyDistribution.other, color: '#6b7280' },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-3">
+                        <span className={`text-xs w-20 shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.label}</span>
+                        <div className={`flex-1 h-5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                          <div
+                            className="stats-bar h-full"
+                            style={{ width: `${item.pct}%`, backgroundColor: item.color }}
+                          />
+                        </div>
+                        <span className={`text-xs w-16 text-right shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {item.count} ({item.pct}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Complexity & Browser Compatibility */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={`p-5 rounded-xl border ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200'}`}>
+                    <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Complexity Score</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-20 h-20">
+                        <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={isDark ? '#1a1a2e' : '#e5e7eb'} strokeWidth="3" />
+                          <circle cx="18" cy="18" r="16" fill="none"
+                            stroke={cssStats.complexityScore > 70 ? '#f87171' : cssStats.complexityScore > 40 ? '#fbbf24' : '#10b981'}
+                            strokeWidth="3"
+                            strokeDasharray={`${cssStats.complexityScore * 1.005} 100`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{cssStats.complexityScore}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${
+                          cssStats.complexityScore > 70 ? 'text-red-400' :
+                          cssStats.complexityScore > 40 ? 'text-yellow-400' : 'text-emerald-400'
+                        }`}>
+                          {cssStats.complexityScore > 70 ? 'Complex' : cssStats.complexityScore > 40 ? 'Medium' : 'Simple'}
+                        </div>
+                        <div className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Based on lines, properties, keyframes &amp; selectors
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={`p-5 rounded-xl border ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200'}`}>
+                    <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Browser Compatibility</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-20 h-20">
+                        <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                          <circle cx="18" cy="18" r="16" fill="none" stroke={isDark ? '#1a1a2e' : '#e5e7eb'} strokeWidth="3" />
+                          <circle cx="18" cy="18" r="16" fill="none"
+                            stroke="#10b981"
+                            strokeWidth="3"
+                            strokeDasharray={`${cssStats.compatScore * 1.005} 100`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{cssStats.compatScore}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-emerald-400">Estimated</div>
+                        <div className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          Based on CSS properties used (heuristic)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Tags footer */}
+          {/* Related Effects Section */}
+          {relatedEffects.length > 0 && activeTab !== 'statistics' && (
+            <div className={`px-6 py-3 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+              <div className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                Related Effects
+              </div>
+              <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
+                {relatedEffects.map((relEffect) => {
+                  const relCatColor = getCategoryColor(relEffect.category);
+                  return (
+                    <button
+                      key={relEffect.id}
+                      onClick={() => {
+                        setSelectedEffectId(relEffect.id);
+                      }}
+                      className={`related-card-hover flex items-center gap-2 px-3 py-2 rounded-lg border shrink-0 text-left min-w-[160px] ${
+                        isDark
+                          ? 'bg-[#111] border-gray-800/50 hover:border-emerald-500/30'
+                          : 'bg-white border-gray-200 hover:border-emerald-500/40'
+                      }`}
+                    >
+                      <div
+                        className="w-8 h-8 rounded overflow-hidden shrink-0 flex items-center justify-center border"
+                        style={{ backgroundColor: `${relCatColor}10`, borderColor: `${relCatColor}20` }}
+                        dangerouslySetInnerHTML={{ __html: relEffect.htmlCode.substring(0, 100) }}
+                      />
+                      <div className="min-w-0">
+                        <div className={`text-xs font-medium truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {relEffect.name}
+                        </div>
+                        <div className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                          {relEffect.difficulty}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Tags footer with rating buttons */}
           <div className={`px-6 py-3 border-t flex flex-wrap gap-2 items-center ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+            {/* Rating buttons */}
+            <div className="flex items-center gap-1 mr-3">
+              <button
+                onClick={() => handleRate('up')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+                  userRating === 'up'
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : isDark
+                      ? 'text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 border-gray-800/30'
+                      : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-500/10 border-gray-200'
+                } ${ratingAnim === 'up' ? 'rating-pop' : ''}`}
+                aria-label="Thumbs up"
+                aria-pressed={userRating === 'up'}
+              >
+                <ThumbsUp className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{simulatedRating}%</span>
+              </button>
+              <button
+                onClick={() => handleRate('down')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+                  userRating === 'down'
+                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : isDark
+                      ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10 border-gray-800/30'
+                      : 'text-gray-400 hover:text-red-500 hover:bg-red-500/10 border-gray-200'
+                } ${ratingAnim === 'down' ? 'rating-pop' : ''}`}
+                aria-label="Thumbs down"
+                aria-pressed={userRating === 'down'}
+              >
+                <ThumbsDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {effect.tags.map((tag) => (
               <span key={tag} className={`text-[11px] px-2 py-0.5 rounded-full ${isDark ? 'bg-[#1a1a2e] text-gray-500' : 'bg-gray-100 text-gray-500'}`}>
                 {tag}

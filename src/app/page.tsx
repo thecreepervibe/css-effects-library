@@ -207,17 +207,22 @@ function CompareModal() {
   );
 }
 
-// Scroll to top button with smooth scroll
+// Enhanced scroll-to-top button with circular progress ring
 function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const theme = useEffectsStore((s) => s.theme);
   const isDark = theme === 'dark';
 
   useEffect(() => {
     const handleScroll = () => {
-      setVisible(window.scrollY > 400);
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? scrollTop / docHeight : 0;
+      setScrollProgress(progress);
+      setVisible(scrollTop > 400);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -225,19 +230,62 @@ function ScrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // SVG circular progress ring
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (scrollProgress * circumference);
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
+          exit={{ opacity: 0, scale: 0 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           onClick={handleScrollToTop}
-          className="fixed bottom-6 right-6 z-40 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-400 hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-500/10"
-          title="Scroll to top"
+          className="fixed bottom-6 right-6 z-40 group"
+          title="Back to top"
           aria-label="Scroll to top"
         >
-          <ArrowUp className="w-4 h-4" />
+          <div className="relative w-12 h-12 flex items-center justify-center">
+            {/* Circular progress ring */}
+            <svg
+              className="absolute inset-0 w-12 h-12 -rotate-90"
+              viewBox="0 0 48 48"
+            >
+              <circle
+                cx="24"
+                cy="24"
+                r={radius}
+                fill="none"
+                stroke={isDark ? '#1a1a2e' : '#e5e7eb'}
+                strokeWidth="2.5"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r={radius}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                className="scroll-top-ring"
+                style={{
+                  strokeDasharray: circumference,
+                  strokeDashoffset: strokeDashoffset,
+                }}
+              />
+            </svg>
+            {/* Inner button */}
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              isDark
+                ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 group-hover:bg-emerald-500/30'
+                : 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-600 group-hover:bg-emerald-500/25'
+            }`}>
+              <ArrowUp className="w-4 h-4" />
+            </div>
+          </div>
         </motion.button>
       )}
     </AnimatePresence>
@@ -273,6 +321,96 @@ function ScrollProgress() {
       aria-valuemax={100}
       aria-label="Page scroll progress"
     />
+  );
+}
+
+// Onboarding Tooltip Component
+function OnboardingTooltips() {
+  const { onboarded, setOnboarded, theme } = useEffectsStore();
+  const isDark = theme === 'dark';
+  const [step, setStep] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (onboarded) return;
+
+    const timers = [
+      setTimeout(() => setStep(1), 1500),
+      setTimeout(() => setStep(2), 4500),
+      setTimeout(() => setStep(3), 7500),
+      setTimeout(() => {
+        setOnboarded(true);
+        setDismissed(true);
+      }, 10500),
+    ];
+
+    return () => timers.forEach(clearTimeout);
+  }, [onboarded, setOnboarded]);
+
+  // Dismiss on any interaction
+  useEffect(() => {
+    if (onboarded || dismissed) return;
+
+    const handleInteraction = () => {
+      setOnboarded(true);
+      setDismissed(true);
+    };
+
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+    return () => {
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+    };
+  }, [onboarded, dismissed, setOnboarded]);
+
+  if (onboarded || dismissed || step === 0) return null;
+
+  const tooltips = [
+    null,
+    { text: 'Search 198 CSS effects...', target: 'search' },
+    { text: 'Browse by category', target: 'sidebar' },
+    { text: 'Try a random effect!', target: 'random' },
+  ];
+
+  const currentTooltip = tooltips[step];
+  if (!currentTooltip) return null;
+
+  // Position based on target
+  const getStyle = (): React.CSSProperties => {
+    switch (currentTooltip.target) {
+      case 'search':
+        return { top: '140px', left: '50%', transform: 'translateX(-50%)' };
+      case 'sidebar':
+        return { top: '200px', left: '80px' };
+      case 'random':
+        return { top: '140px', right: '120px' };
+      default:
+        return {};
+    }
+  };
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={step}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.3 }}
+        className="onboarding-tooltip fixed z-[80] px-4 py-2.5 rounded-xl border shadow-xl"
+        style={{
+          ...getStyle(),
+          background: isDark ? 'rgba(16, 185, 129, 0.9)' : 'rgba(16, 185, 129, 0.95)',
+          color: '#000',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{currentTooltip.text}</span>
+          <span className="text-[10px] opacity-60">{step}/3</span>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -476,6 +614,8 @@ export default function HomePage() {
     useEffectsStore.getState().hydrateRecentlyViewed();
     useEffectsStore.getState().hydrateTheme();
     useEffectsStore.getState().hydrateSearchHistory();
+    useEffectsStore.getState().hydrateRatings();
+    useEffectsStore.getState().hydrateOnboarded();
   }, []);
 
   // Mark as loaded after mount
@@ -701,8 +841,11 @@ export default function HomePage() {
       {/* Compare Modal */}
       <CompareModal />
 
-      {/* Scroll to top */}
+      {/* Scroll to top with progress ring */}
       <ScrollToTop />
+
+      {/* Onboarding Tooltips */}
+      <OnboardingTooltips />
     </div>
   );
 }

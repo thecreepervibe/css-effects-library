@@ -27,7 +27,7 @@ function getStarCount(difficulty: string): number {
 }
 
 export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
-  const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds, theme } = useEffectsStore();
+  const { viewMode, cardSize, setSelectedEffectId, toggleFavorite, favorites, toggleCompare, compareIds, theme, ratings } = useEffectsStore();
   const [copied, setCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [heartAnimating, setHeartAnimating] = useState(false);
@@ -45,6 +45,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const isDark = theme === 'dark';
   const catColor = getCategoryColor(effect.category);
   const viewCount = getEffectViews(effect.id);
+  const userRating = ratings[effect.id] || null;
 
   // Code preview tooltip: show after 800ms hover
   const handleMouseEnter = useCallback(() => {
@@ -309,11 +310,19 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
           {formatViews(viewCount)}
         </span>
 
+        {/* Rating indicator */}
+        {userRating && (
+          <span className="text-[10px] shrink-0">
+            {userRating === 'up' ? '👍' : '👎'}
+          </span>
+        )}
+
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleFavorite}
-            className={`p-1.5 transition-colors ${isFavorited ? 'text-red-400' : isDark ? 'text-gray-600 hover:text-red-400' : 'text-gray-400 hover:text-red-400'} ${heartAnimating ? 'heart-pop' : ''}`}
             aria-label={`Favorite ${effect.name}`}
+            aria-pressed={isFavorited}
+            className={`p-1.5 transition-colors ${isFavorited ? 'text-red-400' : isDark ? 'text-gray-600 hover:text-red-400' : 'text-gray-400 hover:text-red-400'} ${heartAnimating ? 'heart-pop' : ''}`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
           </button>
@@ -417,18 +426,19 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             </span>
           </motion.div>
 
-          {/* Favorite button - top right with heart pop */}
+          {/* Favorite button - top right with heart pop - WITH aria-pressed */}
           <motion.button
             initial={false}
             animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
             transition={{ duration: 0.15 }}
             onClick={handleFavorite}
+            aria-label={`Favorite ${effect.name}`}
+            aria-pressed={isFavorited}
             className={`absolute top-2 right-2 z-20 p-1.5 rounded-lg backdrop-blur-sm transition-colors ${heartAnimating ? 'heart-pop' : ''} ${
               isFavorited
                 ? 'bg-red-500/20 text-red-400'
                 : 'bg-black/40 text-gray-400 hover:text-red-400'
             }`}
-            aria-label={`Favorite ${effect.name}`}
           >
             <Heart className={`w-3.5 h-3.5 ${isFavorited ? 'fill-current' : ''}`} />
           </motion.button>
@@ -496,6 +506,9 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
                   <Sparkles className="w-2.5 h-2.5" /> NEW
                 </span>
               )}
+              {userRating && (
+                <span className="text-[10px]">{userRating === 'up' ? '👍' : '👎'}</span>
+              )}
             </div>
           </div>
 
@@ -526,9 +539,23 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1 mb-3">
+          {/* Enhanced Tag Pills with gradient bg, dot indicator, hover effect */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {effect.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-[#1a1a2e] text-gray-500' : 'bg-gray-100 text-gray-500'}`}>
+              <span
+                key={tag}
+                className={`tag-pill-enhanced text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                  isDark ? 'border border-gray-800/40' : 'border border-gray-200/60'
+                }`}
+                style={{
+                  background: `linear-gradient(135deg, ${catColor}08, ${catColor}14)`,
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: catColor, opacity: 0.7 }}
+                />
                 {tag}
               </span>
             ))}
@@ -537,6 +564,10 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             )}
           </div>
 
+          {/* Card footer separator */}
+          <div className="card-footer-separator mb-2" />
+
+          {/* Improved card footer with Quick Actions Row */}
           <div className="flex items-center gap-2 mt-auto">
             <button
               onClick={handleCopy}
@@ -550,6 +581,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied!' : 'Copy Code'}
             </button>
+            {/* Quick View icon button - opens modal to preview tab */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -557,12 +589,26 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               }}
               className={`p-1.5 rounded-lg transition-colors border ${
                 isDark
-                  ? 'bg-[#1a1a2e] text-gray-500 hover:text-emerald-400 border-gray-800/30 hover:border-emerald-500/20'
-                  : 'bg-gray-100 text-gray-400 hover:text-emerald-600 border-gray-200 hover:border-emerald-500/30'
+                  ? 'bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-400 border-emerald-500/20 hover:border-emerald-500/30'
+                  : 'bg-emerald-500/10 text-emerald-600/70 hover:text-emerald-600 border-emerald-500/20 hover:border-emerald-500/30'
               }`}
-              aria-label={`Open ${effect.name} detail`}
+              aria-label={`Quick view ${effect.name}`}
+              title="Quick View"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+            {/* Details text link */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedEffectId(effect.id);
+              }}
+              className={`text-xs font-medium transition-colors whitespace-nowrap ${
+                isDark ? 'text-emerald-400/60 hover:text-emerald-400' : 'text-emerald-600/60 hover:text-emerald-600'
+              }`}
+              aria-label={`View details for ${effect.name}`}
+            >
+              Details →
             </button>
           </div>
         </div>

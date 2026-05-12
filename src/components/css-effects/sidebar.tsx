@@ -3,7 +3,7 @@
 import { categories, collections, getRecentlyAdded, effects } from '@/lib/effects-data';
 import { useEffectsStore, featuredEffectIds, getCategoryColor } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown, ChevronRight, Flame, Heart, Clock, GitCompare, Star, Sparkles } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Flame, Heart, Clock, GitCompare, Star, Sparkles, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 
 export function Sidebar() {
@@ -151,9 +151,9 @@ export function Sidebar() {
         {/* All Effects button - more prominent */}
         <button
           onClick={() => handleCategoryClick('all')}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 mb-1 ${
+          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 mb-1 relative ${
             selectedCategory === 'all' && !selectedCollection && !selectedFeatured
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
+              ? 'sidebar-active-slide sidebar-active-border bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
               : isDark
                 ? 'text-gray-300 hover:bg-white/5 hover:text-gray-100 border border-transparent'
                 : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
@@ -161,7 +161,10 @@ export function Sidebar() {
         >
           <Sparkles className="w-4 h-4 text-emerald-400/80" />
           All Effects
-          <span className={`ml-auto text-xs font-semibold ${selectedCategory === 'all' && !selectedCollection && !selectedFeatured ? 'text-emerald-400/70' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>{effects.length}</span>
+          <span className={`ml-auto text-xs font-semibold ${selectedCategory === 'all' && !selectedCollection && !selectedFeatured ? 'text-emerald-400/70 sidebar-count-active' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>{effects.length}</span>
+          {selectedCategory === 'all' && !selectedCollection && !selectedFeatured && (
+            <ArrowRight className="w-3 h-3 text-emerald-400/60 ml-1" />
+          )}
         </button>
 
         <div className="space-y-0">
@@ -176,7 +179,7 @@ export function Sidebar() {
                 onClick={() => handleCategoryClick(cat.id)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group sidebar-category-item ${isOdd ? 'sidebar-row-odd' : 'sidebar-row-even'} ${
                   isActive
-                    ? 'active bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
+                    ? 'sidebar-active-slide sidebar-active-border active bg-emerald-500/20 text-emerald-400 border border-emerald-500/25'
                     : isDark
                       ? 'text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:pl-4 border border-transparent'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800 hover:pl-4 border border-transparent'
@@ -196,7 +199,10 @@ export function Sidebar() {
                     </span>
                   )}
                 </span>
-                <span className={`text-xs ml-2 shrink-0 category-count-badge ${hasNew ? 'has-new' : ''} ${isActive ? 'text-emerald-400/70' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>{cat.count}</span>
+                <span className={`flex items-center gap-1 text-xs ml-2 shrink-0 category-count-badge ${hasNew ? 'has-new' : ''} ${isActive ? 'text-emerald-400/70 sidebar-count-active' : isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                  {cat.count}
+                  {isActive && <ArrowRight className="w-3 h-3 text-emerald-400/60" />}
+                </span>
               </button>
             );
           })}

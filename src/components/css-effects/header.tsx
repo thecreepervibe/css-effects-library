@@ -71,6 +71,60 @@ interface SearchSuggestion {
   description?: string;
 }
 
+// Animated number counter hook
+function useAnimatedNumber(target: number, duration: number = 1500) {
+  const [value, setValue] = useState(0);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (hasAnimated.current) return;
+    hasAnimated.current = true;
+
+    const startTime = performance.now();
+    const startValue = 0;
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(startValue + (target - startValue) * eased));
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [target, duration]);
+
+  return value;
+}
+
+// Animated stat pill component
+function AnimatedStatPill({ icon: Icon, label, targetValue, color, gradientFrom, gradientTo, isDark }: {
+  icon: typeof Sparkles;
+  label: string;
+  targetValue: number;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+  isDark: boolean;
+}) {
+  const animatedValue = useAnimatedNumber(targetValue);
+  const displayValue = label === 'Pure CSS' ? `${animatedValue}%` :
+                       label === 'Dependencies' ? 'Zero' :
+                       animatedValue.toString();
+
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${gradientFrom} ${gradientTo} ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
+      <Icon className={`w-4 h-4 ${color} opacity-70`} />
+      <span className={`${color} font-bold text-sm`}>{displayValue}</span>
+      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{label}</span>
+    </div>
+  );
+}
+
 export function Header() {
   const { searchQuery, setSearchQuery, setSelectedEffectId, filteredCount, theme, toggleTheme, searchHistory, addSearchHistory, clearSearchHistory } = useEffectsStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -406,20 +460,44 @@ export function Header() {
         </button>
       </div>
 
-      {/* Stats Row with gradient backgrounds */}
+      {/* Stats Row with animated counters */}
       <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">
-        {[
-          { icon: Sparkles, label: 'Effects', value: totalEffects.toString(), color: 'text-emerald-400', gradientFrom: 'from-emerald-500/8', gradientTo: 'to-emerald-500/3' },
-          { icon: Layers, label: 'Categories', value: totalCategories.toString(), color: 'text-emerald-400', gradientFrom: 'from-blue-500/8', gradientTo: 'to-blue-500/3' },
-          { icon: Code2, label: 'Pure CSS', value: '100%', color: 'text-emerald-400', gradientFrom: 'from-purple-500/8', gradientTo: 'to-purple-500/3' },
-          { icon: Package, label: 'Dependencies', value: 'Zero', color: 'text-emerald-400', gradientFrom: 'from-amber-500/8', gradientTo: 'to-amber-500/3' },
-        ].map((stat) => (
-          <div key={stat.label} className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${stat.gradientFrom} ${stat.gradientTo} ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
-            <stat.icon className={`w-4 h-4 ${stat.color} opacity-70`} />
-            <span className={`${stat.color} font-bold text-sm`}>{stat.value}</span>
-            <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{stat.label}</span>
-          </div>
-        ))}
+        <AnimatedStatPill
+          icon={Sparkles}
+          label="Effects"
+          targetValue={totalEffects}
+          color="text-emerald-400"
+          gradientFrom="from-emerald-500/8"
+          gradientTo="to-emerald-500/3"
+          isDark={isDark}
+        />
+        <AnimatedStatPill
+          icon={Layers}
+          label="Categories"
+          targetValue={totalCategories}
+          color="text-emerald-400"
+          gradientFrom="from-blue-500/8"
+          gradientTo="to-blue-500/3"
+          isDark={isDark}
+        />
+        <AnimatedStatPill
+          icon={Code2}
+          label="Pure CSS"
+          targetValue={100}
+          color="text-emerald-400"
+          gradientFrom="from-purple-500/8"
+          gradientTo="to-purple-500/3"
+          isDark={isDark}
+        />
+        <AnimatedStatPill
+          icon={Package}
+          label="Dependencies"
+          targetValue={0}
+          color="text-emerald-400"
+          gradientFrom="from-amber-500/8"
+          gradientTo="to-amber-500/3"
+          isDark={isDark}
+        />
 
         {/* Animated counter badge showing filtered count */}
         <AnimatePresence mode="wait">

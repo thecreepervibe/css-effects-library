@@ -286,6 +286,7 @@ export function FilterToolbar() {
   const tagCounts = useMemo(() => getTagCounts(), []);
   const [showBatchMenu, setShowBatchMenu] = useState(false);
   const [bouncingDiff, setBouncingDiff] = useState<string | null>(null);
+  const [countFlash, setCountFlash] = useState(false);
   const batchMenuRef = useRef<HTMLDivElement>(null);
 
   // Close batch menu on click outside
@@ -344,6 +345,13 @@ export function FilterToolbar() {
 
     return filtered.length;
   }, [selectedCategory, selectedCollection, selectedDifficulty, selectedTags, searchQuery]);
+
+  // Flash count when filters change
+  useEffect(() => {
+    setCountFlash(true);
+    const timer = setTimeout(() => setCountFlash(false), 600);
+    return () => clearTimeout(timer);
+  }, [filteredCount]);
 
   // Get visible effect IDs for batch export
   const getVisibleEffectIds = useMemo(() => {
@@ -501,13 +509,14 @@ export function FilterToolbar() {
   }
 
   const showingCount = Math.min(visibleCount, filteredCount);
+  const isDefaultSize = cardSize === 100;
 
   return (
     <div className="space-y-3">
       {/* Top toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Showing <span className="text-emerald-400 font-semibold">{showingCount}</span> of <span className="text-emerald-400 font-semibold">{filteredCount}</span> effects
+          Showing <span className={`font-semibold ${countFlash ? 'count-flash' : ''} text-emerald-400`}>{showingCount}</span> of <span className={`font-semibold ${countFlash ? 'count-flash' : ''} text-emerald-400`}>{filteredCount}</span> effects
         </span>
 
         <div className="flex-1" />
@@ -606,7 +615,7 @@ export function FilterToolbar() {
           </AnimatePresence>
         </div>
 
-        {/* Size slider */}
+        {/* Size slider with reset button */}
         <div className="hidden sm:flex items-center gap-2">
           <span className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Size</span>
           <input
@@ -618,6 +627,19 @@ export function FilterToolbar() {
             className="w-20 h-1 accent-emerald-500"
             aria-label="Card size"
           />
+          {/* Reset size button - only shows when not default */}
+          {!isDefaultSize && (
+            <button
+              onClick={() => setCardSize(100)}
+              className={`p-1 rounded transition-colors ${
+                isDark ? 'text-gray-600 hover:text-emerald-400' : 'text-gray-400 hover:text-emerald-600'
+              }`}
+              title="Reset to default size"
+              aria-label="Reset card size to default"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
         {/* View toggle */}
@@ -680,51 +702,59 @@ export function FilterToolbar() {
         )}
       </AnimatePresence>
 
-      {/* Difficulty filter with glow and bounce */}
-      <div className="flex flex-wrap gap-2">
-        {difficulties.map((d) => (
-          <button
-            key={d.value}
-            onClick={() => handleDifficultyClick(d.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              bouncingDiff === d.value ? 'diff-bounce' : ''
-            } ${
-              selectedDifficulty === d.value
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
-                : isDark
-                  ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
-                  : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
-            }`}
-            style={
-              selectedDifficulty === d.value && d.glowColor
-                ? { boxShadow: `0 0 12px ${d.glowColor}` }
-                : undefined
-            }
-          >
-            {d.emoji && <span className="mr-1">{d.emoji}</span>}
-            {d.label}
-          </button>
-        ))}
-      </div>
+      {/* Filters group with shared container/border */}
+      <div className={`rounded-xl border p-3 ${isDark ? 'border-gray-800/40 bg-[#0a0a0a]/50' : 'border-gray-200/60 bg-gray-50/50'}`}>
+        {/* Section label */}
+        <div className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+          Filters
+        </div>
 
-      {/* Tags - shown by default with better visual hierarchy */}
-      <div>
-        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
-          {tagCounts.slice(0, 30).map(({ tag, count }) => (
+        {/* Difficulty filter with glow and bounce */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {difficulties.map((d) => (
             <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
-                selectedTags.includes(tag)
+              key={d.value}
+              onClick={() => handleDifficultyClick(d.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                bouncingDiff === d.value ? 'diff-bounce' : ''
+              } ${
+                selectedDifficulty === d.value
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
                   : isDark
                     ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
                     : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
               }`}
+              style={
+                selectedDifficulty === d.value && d.glowColor
+                  ? { boxShadow: `0 0 12px ${d.glowColor}` }
+                  : undefined
+              }
             >
-              {tag} <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>{count}</span>
+              {d.emoji && <span className="mr-1">{d.emoji}</span>}
+              {d.label}
             </button>
           ))}
+        </div>
+
+        {/* Tags - shown by default with better visual hierarchy */}
+        <div>
+          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
+            {tagCounts.slice(0, 30).map(({ tag, count }) => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                  selectedTags.includes(tag)
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
+                    : isDark
+                      ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
+                      : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                {tag} <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>{count}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

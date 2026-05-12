@@ -113,6 +113,16 @@ interface EffectsStore {
   // Keyboard shortcuts dialog
   keyboardShortcutsOpen: boolean;
   setKeyboardShortcutsOpen: (open: boolean) => void;
+
+  // Ratings
+  ratings: Record<string, 'up' | 'down' | null>;
+  rateEffect: (id: string, rating: 'up' | 'down') => void;
+  hydrateRatings: () => void;
+
+  // Onboarding
+  onboarded: boolean;
+  setOnboarded: (val: boolean) => void;
+  hydrateOnboarded: () => void;
 }
 
 // Category color palette - deterministic color based on category ID
@@ -138,6 +148,16 @@ export function getEffectViews(effectId: string): number {
     hash |= 0;
   }
   return 50 + (Math.abs(hash) % 4951);
+}
+
+// Simulated positive rating percentage (deterministic hash, 60-95%)
+export function getSimulatedRating(effectId: string): number {
+  let hash = 0;
+  for (let i = 0; i < effectId.length; i++) {
+    hash = ((hash << 5) - hash) + effectId.charCodeAt(i);
+    hash |= 0;
+  }
+  return 60 + (Math.abs(hash) % 36); // 60-95%
 }
 
 function loadFromLocalStorage<T>(key: string, fallback: T): T {
@@ -347,4 +367,30 @@ export const useEffectsStore = create<EffectsStore>((set, get) => ({
   // Keyboard shortcuts dialog
   keyboardShortcutsOpen: false,
   setKeyboardShortcutsOpen: (open) => set({ keyboardShortcutsOpen: open }),
+
+  // Ratings
+  ratings: {},
+  rateEffect: (id, rating) =>
+    set((state) => {
+      const current = state.ratings[id];
+      const newRating = current === rating ? null : rating;
+      const newRatings = { ...state.ratings, [id]: newRating };
+      saveToLocalStorage('css-effects-ratings', newRatings);
+      return { ratings: newRatings };
+    }),
+  hydrateRatings: () => {
+    const stored = loadFromLocalStorage<Record<string, 'up' | 'down' | null>>('css-effects-ratings', {});
+    if (Object.keys(stored).length > 0) set({ ratings: stored });
+  },
+
+  // Onboarding
+  onboarded: false,
+  setOnboarded: (val) => {
+    saveToLocalStorage('css-effects-onboarded', val);
+    set({ onboarded: val });
+  },
+  hydrateOnboarded: () => {
+    const stored = loadFromLocalStorage<boolean>('css-effects-onboarded', false);
+    if (stored) set({ onboarded: true });
+  },
 }));
