@@ -713,7 +713,7 @@ export default function HomePage() {
   }, [searchQuery, selectedCategory, selectedDifficulty, selectedTags, selectedCollection, selectedFeatured, selectedUserCollection, setFocusedEffectIndex]);
 
   return (
-    <div className={`min-h-screen flex flex-col animated-bg ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`min-h-screen flex flex-col animated-bg page-transition ${isDark ? 'bg-[#0a0a0a] text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
       {/* Skip navigation link */}
       <a href="#main-content" className="skip-nav">
         Skip to main content

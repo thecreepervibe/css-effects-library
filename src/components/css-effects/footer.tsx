@@ -3,6 +3,44 @@
 import { effects, categories } from '@/lib/effects-data';
 import { useEffectsStore } from '@/lib/effects-store';
 import { Heart, Github, Twitter, Code2, Sparkles, Layers, BookOpen, ExternalLink, Circle, Zap, Flame, Download, Star, Users } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+// Animated counter component for footer - self-contained with IntersectionObserver
+function AnimatedCounter({ target, className }: { target: number; className?: string }) {
+  const [value, setValue] = useState(0);
+  const hasAnimated = useRef(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true;
+          const duration = 1500;
+          const startTime = performance.now();
+          const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setValue(Math.round(target * eased));
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            }
+          };
+          requestAnimationFrame(animate);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return <span ref={ref} className={`footer-counter ${className || ''}`}>{value}</span>;
+}
 
 export function Footer() {
   const { theme } = useEffectsStore();
@@ -78,12 +116,12 @@ export function Footer() {
                 </span>
               </div>
               <p className={`text-sm mb-4 leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                A curated collection of {totalEffects} beautiful CSS effects with live preview &amp; ready-to-use code. Pure CSS, zero dependencies.
+                A curated collection of <AnimatedCounter target={totalEffects} className="text-emerald-400 font-bold" /> beautiful CSS effects with live preview &amp; ready-to-use code. Pure CSS, zero dependencies.
               </p>
-              {/* "Pure CSS, No Dependencies" badge - more prominent */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span className="text-sm text-emerald-400 font-bold">Pure CSS, No Dependencies</span>
+              {/* "Pure CSS, No Dependencies" badge - with shimmer */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl footer-shimmer-badge">
+                <Sparkles className="w-4 h-4 text-emerald-400 relative z-10" />
+                <span className="text-sm text-emerald-400 font-bold relative z-10">Pure CSS, No Dependencies</span>
               </div>
 
               {/* Social Links with bounce up on hover */}
@@ -168,7 +206,7 @@ export function Footer() {
                       style={{ width: `${beginnerPct}%` }}
                     />
                   </div>
-                  <span className="text-sm text-emerald-400 font-bold w-8">{beginnerCount}</span>
+                  <AnimatedCounter target={beginnerCount} className="text-sm text-emerald-400 font-bold w-8" />
                 </div>
 
                 {/* Intermediate bar with tiny icon */}
@@ -181,7 +219,7 @@ export function Footer() {
                       style={{ width: `${intermediatePct}%` }}
                     />
                   </div>
-                  <span className="text-sm text-yellow-400 font-bold w-8">{intermediateCount}</span>
+                  <AnimatedCounter target={intermediateCount} className="text-sm text-yellow-400 font-bold w-8" />
                 </div>
 
                 {/* Advanced bar with tiny icon */}
@@ -194,7 +232,7 @@ export function Footer() {
                       style={{ width: `${advancedPct}%` }}
                     />
                   </div>
-                  <span className="text-sm text-red-400 font-bold w-8">{advancedCount}</span>
+                  <AnimatedCounter target={advancedCount} className="text-sm text-red-400 font-bold w-8" />
                 </div>
               </div>
 
@@ -213,7 +251,7 @@ export function Footer() {
                 {communityStats.map((stat) => (
                   <div
                     key={stat.label}
-                    className={`flex flex-col items-center p-3 rounded-xl border ${
+                    className={`flex flex-col items-center p-3 rounded-xl border community-stat-card ${
                       isDark
                         ? 'bg-[#111] border-gray-800/50'
                         : 'bg-white border-gray-200'
@@ -238,11 +276,11 @@ export function Footer() {
             </div>
             <div className="flex items-center gap-4 text-sm">
               <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>
-                <span className="text-emerald-400 font-bold">{totalEffects}</span> effects
+                <AnimatedCounter target={totalEffects} className="text-emerald-400 font-bold" /> effects
               </span>
               <span className={isDark ? 'text-gray-700' : 'text-gray-300'}>•</span>
               <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>
-                <span className="text-emerald-400 font-bold">{totalCategories}</span> categories
+                <AnimatedCounter target={totalCategories} className="text-emerald-400 font-bold" /> categories
               </span>
               <span className={isDark ? 'text-gray-700' : 'text-gray-300'}>•</span>
               <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>

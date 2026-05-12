@@ -4,8 +4,8 @@ import type { CSSEffect } from '@/lib/effects-data';
 import { effects } from '@/lib/effects-data';
 import { useEffectsStore, getEffectViews, getCategoryColor, getSimulatedRating, minifyCSS } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, BarChart3, ThumbsUp, ThumbsDown, Sun, Moon, FolderPlus, XCircle } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { X, Copy, Check, Code2, Eye, FileCode, Maximize2, Minimize2, Share2, Download, FileDown, Terminal, RotateCcw, BarChart3, ThumbsUp, ThumbsDown, Sun, Moon, FolderPlus, XCircle, Palette, ClipboardList } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 // Enhanced syntax highlighting for CSS code
@@ -119,14 +119,274 @@ function analyzeCSS(cssCode: string) {
   };
 }
 
+// Feature 2: Color Palette Extractor - extract colors from CSS code
+interface ExtractedColor {
+  value: string;
+  type: 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla';
+}
+
+function extractColors(cssCode: string, htmlCode: string): ExtractedColor[] {
+  const colors: ExtractedColor[] = [];
+  const seen = new Set<string>();
+  const combined = cssCode + '\n' + htmlCode;
+
+  // Extract hex colors (#rgb, #rrggbb, #rrggbbaa)
+  const hexMatches = combined.match(/#[0-9a-fA-F]{3,8}\b/g) || [];
+  hexMatches.forEach(hex => {
+    const normalized = hex.toLowerCase();
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      colors.push({ value: normalized, type: 'hex' });
+    }
+  });
+
+  // Extract rgb/rgba
+  const rgbMatches = combined.match(/rgba?\s*\([^)]+\)/g) || [];
+  rgbMatches.forEach(rgb => {
+    const normalized = rgb.replace(/\s/g, '').toLowerCase();
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      const type = rgb.startsWith('rgba') ? 'rgba' : 'rgb';
+      colors.push({ value: rgb.trim(), type });
+    }
+  });
+
+  // Extract hsl/hsla
+  const hslMatches = combined.match(/hsla?\s*\([^)]+\)/g) || [];
+  hslMatches.forEach(hsl => {
+    const normalized = hsl.replace(/\s/g, '').toLowerCase();
+    if (!seen.has(normalized)) {
+      seen.add(normalized);
+      const type = hsl.startsWith('hsla') ? 'hsla' : 'hsl';
+      colors.push({ value: hsl.trim(), type });
+    }
+  });
+
+  return colors;
+}
+
+// Convert any color to hex for display
+function colorToHex(color: ExtractedColor): string {
+  if (color.type === 'hex') return color.value;
+  // For rgb/rgba/hsl, use a canvas trick via the browser
+  return color.value; // fallback: show raw value
+}
+
+// Color Palette Tab Component
+function ColorPaletteTab({ effect, isDark, copied, setCopied }: {
+  effect: CSSEffect;
+  isDark: boolean;
+  copied: string | null;
+  setCopied: (v: string | null) => void;
+}) {
+  const colors = useMemo(() => extractColors(effect.cssCode, effect.htmlCode), [effect.cssCode, effect.htmlCode]);
+  const [copiedColor, setCopiedColor] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const styleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Inject preview for color tab
+  useEffect(() => {
+    if (!previewRef.current) return;
+    const uniquePrefix = `colors-${effect.id}-`;
+    let modifiedCss = effect.cssCode;
+    const classMatches = effect.cssCode.match(/\.([a-zA-Z0-9_-]+)/g);
+    if (classMatches) {
+      const uniqueClasses = new Set<string>();
+      classMatches.forEach((match) => {
+        const className = match.substring(1);
+        if (!uniqueClasses.has(className)) {
+          uniqueClasses.add(className);
+          const regex = new RegExp(`\\.${className}(?=[\\s{,:])`, 'g');
+          modifiedCss = modifiedCss.replace(regex, `.${uniquePrefix}${className}`);
+        }
+      });
+    }
+    const animMatches = modifiedCss.match(/@keyframes\s+([a-zA-Z0-9_-]+)/g);
+    if (animMatches) {
+      animMatches.forEach((match) => {
+        const animName = match.replace('@keyframes ', '');
+        const uniqueAnimName = `${uniquePrefix}${animName}`;
+        modifiedCss = modifiedCss.replace(new RegExp(`@keyframes\\s+${animName}`, 'g'), `@keyframes ${uniqueAnimName}`);
+        modifiedCss = modifiedCss.replace(new RegExp(`animation:\\s*([^}]*?)${animName}`, 'g'), `animation: $1${uniqueAnimName}`);
+      });
+    }
+    if (styleRef.current) styleRef.current.remove();
+    const style = document.createElement('style');
+    style.textContent = modifiedCss;
+    document.head.appendChild(style);
+    styleRef.current = style;
+
+    let modifiedHtml = effect.htmlCode;
+    if (classMatches) {
+      const uniqueClasses = new Set<string>();
+      classMatches.forEach((match) => {
+        const className = match.substring(1);
+        if (!uniqueClasses.has(className)) {
+          uniqueClasses.add(className);
+          modifiedHtml = modifiedHtml.replace(new RegExp(`class="${className}"`, 'g'), `class="${uniquePrefix}${className}"`);
+          modifiedHtml = modifiedHtml.replace(new RegExp(`class="${className} `, 'g'), `class="${uniquePrefix}${className} `);
+        }
+      });
+    }
+    previewRef.current.innerHTML = modifiedHtml;
+    return () => { if (styleRef.current) { styleRef.current.remove(); styleRef.current = null; } };
+  }, [effect]);
+
+  const handleCopyColor = (color: string) => {
+    navigator.clipboard.writeText(color);
+    setCopiedColor(color);
+    setTimeout(() => setCopiedColor(null), 1500);
+    toast.success(`Copied ${color}`, { duration: 1500 });
+  };
+
+  const handleCopyAllColors = () => {
+    const cssVars = colors.map((c, i) => `  --color-${i + 1}: ${c.value};`).join('\n');
+    const block = `:root {\n${cssVars}\n}`;
+    navigator.clipboard.writeText(block);
+    setCopied('colors');
+    setTimeout(() => setCopied(null), 2000);
+    toast.success('All colors copied as CSS variables!', { duration: 2000 });
+  };
+
+  return (
+    <div className={`${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
+      {/* Mini preview at top */}
+      <div className={`flex items-center justify-center p-6 border-b relative ${isDark ? 'border-gray-800/30' : 'border-gray-200'}`}>
+        <div ref={previewRef} className="relative z-10 transform scale-110" />
+      </div>
+
+      <div className="p-6">
+        {/* Header with copy all */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+              Extracted Colors
+            </h3>
+            <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {colors.length} color{colors.length !== 1 ? 's' : ''} found in CSS &amp; HTML
+            </p>
+          </div>
+          {colors.length > 0 && (
+            <button
+              onClick={handleCopyAllColors}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all"
+              aria-label="Copy all colors as CSS variables"
+            >
+              {copied === 'colors' ? <Check className="w-3 h-3" /> : <ClipboardList className="w-3 h-3" />}
+              {copied === 'colors' ? 'Copied!' : 'Copy All'}
+            </button>
+          )}
+        </div>
+
+        {colors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`}>
+              <Palette className={`w-8 h-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+            </div>
+            <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No colors found</p>
+            <p className={`text-xs mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>This effect doesn&apos;t use explicit color values</p>
+          </div>
+        ) : (
+          <>
+            {/* Color swatches grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {colors.map((color, i) => {
+                const displayValue = color.type === 'hex' ? color.value : color.value;
+                const isCopied = copiedColor === color.value;
+                return (
+                  <motion.button
+                    key={`${color.value}-${i}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: i * 0.03 }}
+                    onClick={() => handleCopyColor(color.value)}
+                    className={`group flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer hover:scale-105 ${
+                      isCopied
+                        ? 'border-emerald-500/50 bg-emerald-500/5'
+                        : isDark ? 'border-gray-800/50 bg-[#111] hover:border-gray-700' : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                    aria-label={`Copy color ${color.value}`}
+                  >
+                    {/* Color swatch */}
+                    <div
+                      className="w-12 h-12 rounded-lg border shadow-sm relative overflow-hidden"
+                      style={{
+                        backgroundColor: color.value,
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      {/* Checkerboard for transparency */}
+                      {color.type === 'rgba' && (
+                        <div className="absolute inset-0" style={{
+                          backgroundImage: 'linear-gradient(45deg, #808080 25%, transparent 25%), linear-gradient(-45deg, #808080 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #808080 75%), linear-gradient(-45deg, transparent 75%, #808080 75%)',
+                          backgroundSize: '8px 8px',
+                          backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+                          zIndex: 0,
+                        }} />
+                      )}
+                      {/* Copied checkmark overlay */}
+                      {isCopied && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                          <Check className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Color value */}
+                    <span className={`text-[10px] font-mono truncate w-full text-center transition-colors ${
+                      isCopied
+                        ? 'text-emerald-400'
+                        : isDark ? 'text-gray-400 group-hover:text-gray-200' : 'text-gray-500 group-hover:text-gray-700'
+                    }`}>
+                      {displayValue}
+                    </span>
+                    {/* Type badge */}
+                    <span className={`text-[8px] uppercase font-medium px-1.5 py-0.5 rounded ${
+                      color.type === 'hex'
+                        ? 'bg-pink-500/10 text-pink-400/70'
+                        : color.type === 'rgb' || color.type === 'rgba'
+                          ? 'bg-blue-500/10 text-blue-400/70'
+                          : 'bg-purple-500/10 text-purple-400/70'
+                    }`}>
+                      {color.type}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* CSS Variables Preview */}
+            <div className={`mt-6 p-4 rounded-xl border ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>CSS Variables Preview</h4>
+              </div>
+              <pre className={`text-[11px] font-mono leading-relaxed overflow-x-auto ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <code>:root {'{'}</code>
+                {'\n'}{colors.map((c, i) => (
+                  <span key={i}>
+                    {'  '}<span style={{ color: '#f472b6' }}>--color-{i + 1}</span>: <span style={{ color: '#34d399' }}>{c.value}</span>;
+                    {i < colors.length - 1 ? '\n' : ''}
+                  </span>
+                ))}
+                {'\n'}{'}'}
+              </pre>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Inner modal content - resets via key when effect changes
 function ModalContent({ effect }: { effect: CSSEffect }) {
   const { setSelectedEffectId, theme, playgroundCss, setPlaygroundCss, resetPlaygroundCss, ratings, rateEffect, previewDarkMode, setPreviewDarkMode, userCollections, addUserCollection, addEffectToCollection, COLLECTION_COLORS } = useEffectsStore();
-  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground' | 'statistics'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'css' | 'html' | 'playground' | 'statistics' | 'colors'>('preview');
   const [copied, setCopied] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [tabKey, setTabKey] = useState(0);
+  const [prevTab, setPrevTab] = useState<string>('preview');
+  const [tabDirection, setTabDirection] = useState<'left' | 'right'>('right');
   const [ratingAnim, setRatingAnim] = useState<'up' | 'down' | null>(null);
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
@@ -486,6 +746,7 @@ ${effect.cssCode}
     { id: 'preview' as const, label: 'Preview', icon: Eye },
     { id: 'css' as const, label: 'CSS', icon: Code2 },
     { id: 'html' as const, label: 'HTML', icon: FileCode },
+    { id: 'colors' as const, label: 'Colors', icon: Palette },
     { id: 'playground' as const, label: 'Playground', icon: Terminal },
     { id: 'statistics' as const, label: 'Statistics', icon: BarChart3 },
   ];
@@ -768,24 +1029,36 @@ ${effect.cssCode}
 
           {/* Tabs with icons - staggered reveal */}
           <div className={`flex border-b modal-stagger-tabs ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
-            {tabConfig.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setTabKey(prev => prev + 1); }}
-                className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'text-emerald-400 border-b-2 border-emerald-400'
-                    : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <tab.icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
+            {tabConfig.map((tab) => {
+              const tabIndex = tabConfig.findIndex(t => t.id === tab.id);
+              const activeIndex = tabConfig.findIndex(t => t.id === activeTab);
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setTabDirection(tabIndex > activeIndex ? 'right' : 'left');
+                    setPrevTab(activeTab);
+                    setActiveTab(tab.id);
+                    setTabKey(prev => prev + 1);
+                  }}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all relative ${
+                    activeTab === tab.id
+                      ? 'text-emerald-400 border-b-2 border-emerald-400'
+                      : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {activeTab === tab.id && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" style={{ animation: 'border-bottom-grow 0.2s ease-out forwards' }} />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Content - staggered reveal with tab animation */}
-          <div className="flex-1 overflow-auto custom-scrollbar modal-stagger-content tab-scale-in" key={tabKey}>
+          {/* Content - with directional slide animation and blur */}
+          <div className={`flex-1 overflow-auto custom-scrollbar modal-stagger-content modal-tab-blur ${tabDirection === 'right' ? 'tab-slide-in-right' : 'tab-slide-in-left'}`} key={tabKey}>
             {activeTab === 'preview' && (
               <div className={`flex items-center justify-center p-10 relative ${
                 previewDarkMode ? 'bg-[#0a0a0a]' : 'bg-white'
@@ -817,7 +1090,7 @@ ${effect.cssCode}
             )}
 
             {activeTab === 'css' && (
-              <div className="relative">
+              <div className="relative code-block-overlay">
                 <button
                   onClick={() => handleCopy(effect.cssCode, 'css')}
                   className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
@@ -833,7 +1106,7 @@ ${effect.cssCode}
             )}
 
             {activeTab === 'html' && (
-              <div className="relative">
+              <div className="relative code-block-overlay">
                 <button
                   onClick={() => handleCopy(effect.htmlCode, 'html')}
                   className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition-all z-10"
@@ -846,6 +1119,10 @@ ${effect.cssCode}
                   <code dangerouslySetInnerHTML={{ __html: addLineNumbers(highlightHTML(effect.htmlCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')), isDark) }} />
                 </pre>
               </div>
+            )}
+
+            {activeTab === 'colors' && (
+              <ColorPaletteTab effect={effect} isDark={isDark} copied={copied} setCopied={setCopied} />
             )}
 
             {activeTab === 'playground' && (

@@ -3,7 +3,7 @@
 import { useEffectsStore, featuredEffectIds, getCategoryColor } from '@/lib/effects-store';
 import { getTagCounts, effects, collections, categories } from '@/lib/effects-data';
 import type { Difficulty } from '@/lib/effects-data';
-import { LayoutGrid, List, Shuffle, Keyboard, X, Download, FileDown, Heart, GitCompare, RotateCcw } from 'lucide-react';
+import { LayoutGrid, List, Shuffle, Keyboard, X, Download, FileDown, Heart, GitCompare, RotateCcw, ChevronDown } from 'lucide-react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -287,6 +287,8 @@ export function FilterToolbar() {
   const [showBatchMenu, setShowBatchMenu] = useState(false);
   const [bouncingDiff, setBouncingDiff] = useState<string | null>(null);
   const [countFlash, setCountFlash] = useState(false);
+  const [diffRipples, setDiffRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const [tagsExpanded, setTagsExpanded] = useState(true);
   const batchMenuRef = useRef<HTMLDivElement>(null);
 
   // Close batch menu on click outside
@@ -421,10 +423,19 @@ export function FilterToolbar() {
     toast('All filters cleared', { duration: 1500 });
   };
 
-  const handleDifficultyClick = (value: Difficulty | 'all') => {
+  const handleDifficultyClick = (value: Difficulty | 'all', e: React.MouseEvent<HTMLButtonElement>) => {
     setSelectedDifficulty(value);
     setBouncingDiff(value);
     setTimeout(() => setBouncingDiff(null), 300);
+    // Ripple effect
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const id = Date.now();
+    setDiffRipples(prev => [...prev, { id, x, y }]);
+    setTimeout(() => {
+      setDiffRipples(prev => prev.filter(r => r.id !== id));
+    }, 600);
   };
 
   const handleBatchExport = (type: 'visible' | 'favorites' | 'compared') => {
@@ -714,8 +725,8 @@ export function FilterToolbar() {
           {difficulties.map((d) => (
             <button
               key={d.value}
-              onClick={() => handleDifficultyClick(d.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              onClick={(e) => handleDifficultyClick(d.value, e)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-all diff-ripple-container relative ${
                 bouncingDiff === d.value ? 'diff-bounce' : ''
               } ${
                 selectedDifficulty === d.value
@@ -732,29 +743,66 @@ export function FilterToolbar() {
             >
               {d.emoji && <span className="mr-1">{d.emoji}</span>}
               {d.label}
+              {/* Ripple effects */}
+              {diffRipples.filter(r => r.id === diffRipples[diffRipples.length - 1]?.id).map(ripple => (
+                <span
+                  key={ripple.id}
+                  className="ripple-effect"
+                  style={{
+                    left: ripple.x - 10,
+                    top: ripple.y - 10,
+                    width: 20,
+                    height: 20,
+                  }}
+                />
+              ))}
             </button>
           ))}
         </div>
 
-        {/* Tags - shown by default with better visual hierarchy */}
+        {/* Gradient separator between difficulty and tags */}
+        <div className="filter-gradient-separator" />
+
+        {/* Tags - shown by default with expand/collapse */}
         <div>
-          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
-            {tagCounts.slice(0, 30).map(({ tag, count }) => (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
-                  selectedTags.includes(tag)
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
-                    : isDark
-                      ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
-                      : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                {tag} <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>{count}</span>
-              </button>
-            ))}
+          <div className="flex items-center justify-between mb-1">
+            <button
+              onClick={() => setTagsExpanded(!tagsExpanded)}
+              className={`text-[10px] font-medium flex items-center gap-1 transition-colors ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${tagsExpanded ? '' : '-rotate-90'}`} />
+              Tags
+            </button>
           </div>
+          <AnimatePresence>
+            {tagsExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scrollbar pb-1">
+                  {tagCounts.slice(0, 30).map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all ${
+                        selectedTags.includes(tag)
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 active-border-bottom'
+                          : isDark
+                            ? 'bg-[#111] text-gray-500 border border-gray-800 hover:border-gray-700 hover:text-gray-300'
+                            : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                      }`}
+                    >
+                      {tag} <span className={isDark ? 'text-gray-600' : 'text-gray-400'}>{count}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

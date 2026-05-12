@@ -1,9 +1,9 @@
 'use client';
 
 import type { CSSEffect } from '@/lib/effects-data';
-import { useEffectsStore, getCategoryColor, getEffectViews } from '@/lib/effects-store';
+import { useEffectsStore, getCategoryColor, getEffectViews, getSimulatedRating } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star, Eye, Code2, Bookmark } from 'lucide-react';
+import { Copy, ExternalLink, Sparkles, Check, Heart, GitCompare, Star, Eye, Code2, Bookmark, Maximize2, Minimize2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
@@ -34,11 +34,14 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const [checkAnimating, setCheckAnimating] = useState(false);
   const [bookmarkAnimating, setBookmarkAnimating] = useState(false);
   const [showCodeTooltip, setShowCodeTooltip] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const previewRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
+  const [glowPos, setGlowPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const isFavorited = favorites.includes(effect.id);
   const isComparing = compareIds.includes(effect.id);
@@ -49,6 +52,9 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const catColor = getCategoryColor(effect.category);
   const viewCount = getEffectViews(effect.id);
   const userRating = ratings[effect.id] || null;
+  const simulatedRating = getSimulatedRating(effect.id);
+  const thumbsUpCount = Math.round(simulatedRating);
+  const thumbsDownCount = 100 - thumbsUpCount;
 
   // Code preview tooltip: show after 800ms hover
   const handleMouseEnter = useCallback(() => {
@@ -61,6 +67,7 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
   const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
     setShowCodeTooltip(false);
+    setTiltStyle({});
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
@@ -77,6 +84,22 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     setTimeout(() => {
       setRipples(prev => prev.filter(r => r.id !== id));
     }, 600);
+  }, []);
+
+  // 3D tilt effect on mouse move
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -4; // subtle tilt
+    const rotateY = ((x - centerX) / centerX) * 4;
+    setTiltStyle({
+      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+      transition: 'transform 0.15s ease-out',
+    });
+    setGlowPos({ x, y });
   }, []);
 
   // Inject CSS for the preview
@@ -250,6 +273,12 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
     return count.toString();
   };
 
+  // Feature 3: Quick Preview expand/collapse
+  const handleToggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
   // Staggered entrance animation - more dramatic
   const staggerDelay = Math.min(index * 0.04, 0.6);
 
@@ -385,11 +414,13 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow card-shine ${
+      onMouseMove={handleMouseMove}
+      className={`group relative border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 emerald-pulse-glow card-shine card-3d-tilt card-mouse-glow ${
         isFocused ? 'effect-card-focused border-emerald-500/40' : ''
       } ${isDark ? 'bg-[#111] border-gray-800/50' : 'bg-white border-gray-200 shadow-sm'}`}
       style={{
         minHeight: `${cardSize * 2}px`,
+        ...tiltStyle,
       }}
       data-effect-index={index}
       tabIndex={0}
@@ -421,9 +452,9 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
 
       {/* Hover lift effect */}
       <div className="group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-emerald-500/10 transition-all duration-300 h-full flex flex-col">
-        {/* Preview area */}
+        {/* Preview area with animated gradient border */}
         <div
-          className="relative overflow-hidden flex items-center justify-center card-preview-shimmer"
+          className="relative overflow-hidden flex items-center justify-center card-preview-shimmer preview-gradient-border rounded-t-2xl"
           style={{ height: `${previewHeight}px` }}
         >
           <div className={`absolute inset-0 ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
@@ -437,6 +468,20 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               }}
             />
           </div>
+
+          {/* Mouse glow that follows cursor position */}
+          {isHovered && (
+            <div
+              className="absolute w-64 h-64 rounded-full pointer-events-none"
+              style={{
+                left: glowPos.x - 128,
+                top: glowPos.y - 128,
+                background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.03) 40%, transparent 70%)',
+                transition: 'left 0.1s ease-out, top 0.1s ease-out',
+                zIndex: 5,
+              }}
+            />
+          )}
 
           {/* Preview content with scale animation */}
           <div
@@ -619,6 +664,29 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             )}
           </div>
 
+          {/* Feature 5: Effect Rating Summary */}
+          <div className={`flex items-center gap-2 mb-2 px-0.5`}>
+            <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800/60' : 'bg-gray-200/80'}`}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${simulatedRating}%`,
+                  background: simulatedRating >= 80 ? '#10b981' : simulatedRating >= 65 ? '#fbbf24' : '#f87171',
+                }}
+              />
+            </div>
+            <div className={`flex items-center gap-1.5 shrink-0`}>
+              <span className="flex items-center gap-0.5 text-[9px] text-emerald-400/70">
+                <ThumbsUp className="w-2.5 h-2.5" />
+                <span>{thumbsUpCount}%</span>
+              </span>
+              <span className="flex items-center gap-0.5 text-[9px] text-gray-500/50">
+                <ThumbsDown className="w-2.5 h-2.5" />
+                <span>{thumbsDownCount}%</span>
+              </span>
+            </div>
+          </div>
+
           {/* Card footer separator */}
           <div className="card-footer-separator mb-2" />
 
@@ -635,6 +703,21 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied!' : 'Copy Code'}
+            </button>
+            {/* Feature 3: Quick Preview expand button */}
+            <button
+              onClick={handleToggleExpand}
+              className={`p-1.5 rounded-lg transition-colors border ${
+                isExpanded
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : isDark
+                    ? 'bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-400 border-emerald-500/20 hover:border-emerald-500/30'
+                    : 'bg-emerald-500/10 text-emerald-600/70 hover:text-emerald-600 border-emerald-500/20 hover:border-emerald-500/30'
+              }`}
+              aria-label={isExpanded ? 'Collapse preview' : 'Expand preview'}
+              title={isExpanded ? 'Collapse' : 'Quick Preview'}
+            >
+              {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>
             {/* Quick View icon button - opens modal to preview tab */}
             <button
@@ -666,6 +749,58 @@ export function EffectCard({ effect, index, isFocused }: EffectCardProps) {
               Details →
             </button>
           </div>
+
+          {/* Feature 3: Quick Preview Expansion - larger preview + CSS code */}
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="overflow-hidden"
+              >
+                <div className="card-footer-separator mt-2 mb-2" />
+                {/* Expanded preview area - double height */}
+                <div
+                  className={`relative overflow-hidden flex items-center justify-center rounded-lg border ${
+                    isDark ? 'bg-[#0a0a0a] border-gray-800/40' : 'bg-gray-50 border-gray-200'
+                  }`}
+                  style={{ height: `${previewHeight * 2}px` }}
+                >
+                  <div className={`absolute inset-0 ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`}>
+                    <div className="absolute inset-0 opacity-[0.04]"
+                      style={{
+                        backgroundImage: isDark
+                          ? 'radial-gradient(circle, #fff 1px, transparent 1px)'
+                          : 'radial-gradient(circle, #000 1px, transparent 1px)',
+                        backgroundSize: '12px 12px',
+                      }}
+                    />
+                  </div>
+                  {/* Re-render preview content in expanded area */}
+                  <div
+                    ref={(el) => {
+                      if (el && previewRef.current) {
+                        el.innerHTML = previewRef.current.innerHTML;
+                      }
+                    }}
+                    className="relative z-10 flex items-center justify-center scale-110 pointer-events-none"
+                  />
+                </div>
+                {/* CSS code preview */}
+                <div className={`mt-2 rounded-lg border overflow-hidden ${isDark ? 'bg-[#0d1117] border-gray-800/40' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 border-b ${isDark ? 'border-gray-800/50 bg-[#0d1117]' : 'border-gray-200 bg-gray-100'}`}>
+                    <Code2 className="w-3 h-3 text-emerald-400/70" />
+                    <span className={`text-[9px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>CSS</span>
+                  </div>
+                  <pre className={`px-3 py-2 text-[9px] font-mono leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto custom-scrollbar ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {effect.cssCode}
+                  </pre>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>

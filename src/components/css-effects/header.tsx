@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Search, Shuffle, Moon, Sun, Sparkles, Layers, Code2, Package, Clock, X, Trash2, Tag, FolderOpen } from 'lucide-react';
+import { Search, Shuffle, Moon, Sun, Sparkles, Layers, Code2, Package, Clock, X, Trash2, Tag, FolderOpen, ArrowRight, Calendar } from 'lucide-react';
 import { useEffectsStore, getCategoryColor } from '@/lib/effects-store';
 import { effects, categories } from '@/lib/effects-data';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -117,7 +117,7 @@ function AnimatedStatPill({ icon: Icon, label, targetValue, color, gradientFrom,
                        animatedValue.toString();
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${gradientFrom} ${gradientTo} stat-pill-glow ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-gradient-to-br ${gradientFrom} ${gradientTo} stat-pill-glow stat-pill-interactive ${isDark ? 'border-gray-800/40' : 'border-gray-200/60'}`}>
       <Icon className={`w-4 h-4 ${color} opacity-70`} />
       <span className={`${color} font-bold text-sm`}>{displayValue}</span>
       <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{label}</span>
@@ -173,9 +173,105 @@ function TypingSubtitle({ phrases, isDark }: { phrases: string[]; isDark: boolea
 
   return (
     <span className={`text-sm tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-      {displayText}
+      <span className="typing-gradient-text">{displayText}</span>
       <span className="typing-cursor" />
     </span>
+  );
+}
+
+// Feature 1: Effect of the Day - deterministic selection based on date
+function EffectOfTheDay({ isDark }: { isDark: boolean }) {
+  const { setSelectedEffectId } = useEffectsStore();
+
+  const effectOfTheDay = useMemo(() => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+      hash |= 0;
+    }
+    return effects[Math.abs(hash) % effects.length];
+  }, []);
+
+  const catColor = getCategoryColor(effectOfTheDay.category);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+      className="max-w-lg mx-auto mb-4 relative z-10"
+    >
+      <div
+        className="effect-of-day-banner relative rounded-xl overflow-hidden cursor-pointer group"
+        onClick={() => setSelectedEffectId(effectOfTheDay.id)}
+        role="button"
+        aria-label={`View effect of the day: ${effectOfTheDay.name}`}
+      >
+        {/* Gradient border with shimmer */}
+        <div className="absolute inset-0 rounded-xl p-[1.5px]" style={{
+          background: 'linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981)',
+          backgroundSize: '300% 300%',
+          animation: 'gradient-shift 4s ease infinite',
+        }}>
+          <div className={`w-full h-full rounded-[10px] ${isDark ? 'bg-[#0d0d1a]' : 'bg-white'}`} />
+        </div>
+
+        <div className={`relative rounded-xl px-4 py-2.5 flex items-center gap-3 ${isDark ? 'bg-[#0d0d1a]' : 'bg-white'}`}>
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 shimmer-gradient opacity-30 rounded-xl pointer-events-none" />
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Calendar className="w-3.5 h-3.5 text-emerald-400/70" />
+            <span className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-emerald-400/60' : 'text-emerald-600/60'}`}>
+              Effect of the Day
+            </span>
+          </div>
+
+          <div className={`w-px h-5 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            {/* Mini preview */}
+            <div
+              className={`w-7 h-7 rounded-md overflow-hidden shrink-0 flex items-center justify-center border ${
+                isDark ? 'bg-[#0a0a0a] border-gray-800/30' : 'bg-gray-50 border-gray-200'
+              }`}
+              dangerouslySetInnerHTML={{ __html: effectOfTheDay.htmlCode.substring(0, 150) }}
+            />
+            <div className="min-w-0 flex-1">
+              <span className={`text-xs font-semibold truncate block ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                {effectOfTheDay.name}
+              </span>
+            </div>
+            <span
+              className="text-[9px] px-1.5 py-0.5 rounded-full border capitalize shrink-0"
+              style={{ backgroundColor: `${catColor}15`, color: catColor, borderColor: `${catColor}30` }}
+            >
+              {effectOfTheDay.category.replace('-', ' ')}
+            </span>
+          </div>
+
+          <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 ${isDark ? 'text-emerald-400/50' : 'text-emerald-600/50'}`} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Helper: highlight matching text in suggestions
+function highlightMatch(text: string, query: string, isDark: boolean): React.ReactNode {
+  if (!query.trim()) return text;
+  const q = query.toLowerCase();
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return text;
+
+  return (
+    <>
+      {text.substring(0, idx)}
+      <span className="text-emerald-400 font-semibold bg-emerald-500/10 rounded px-0.5">{text.substring(idx, idx + query.length)}</span>
+      {text.substring(idx + query.length)}
+    </>
   );
 }
 
@@ -184,7 +280,23 @@ export function Header() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const headerRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark';
+
+  // Detect platform for shortcut hint
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+  const shortcutHint = isMac ? '⌘K' : 'Ctrl+K';
+
+  // Parallax scrolling effect for header
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const typingPhrases = useMemo(() => [
     'A curated collection of beautiful CSS effects',
@@ -192,8 +304,13 @@ export function Header() {
     '198 pure CSS effects ready to use',
   ], []);
 
+  // Keyboard shortcut: Ctrl+K / Cmd+K to focus search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
       if (e.key === '/' && document.activeElement !== inputRef.current) {
         e.preventDefault();
         inputRef.current?.focus();
@@ -203,6 +320,7 @@ export function Header() {
         setSearchQuery('');
         setSelectedEffectId(null);
         setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -216,15 +334,23 @@ export function Header() {
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
+    setSelectedSuggestionIndex(-1);
     if (query.trim()) {
       addSearchHistory(query);
     }
   }, [setSearchQuery, addSearchHistory]);
 
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setSelectedSuggestionIndex(-1);
+    inputRef.current?.focus();
+  }, [setSearchQuery]);
+
   const handleHistoryClick = useCallback((query: string) => {
     setSearchQuery(query);
     setShowHistory(false);
     setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
     inputRef.current?.focus();
   }, [setSearchQuery]);
 
@@ -244,6 +370,7 @@ export function Header() {
     }
     setShowSuggestions(false);
     setShowHistory(false);
+    setSelectedSuggestionIndex(-1);
     inputRef.current?.blur();
   }, [setSelectedEffectId]);
 
@@ -260,6 +387,7 @@ export function Header() {
     setTimeout(() => {
       setShowHistory(false);
       setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
     }, 200);
   };
 
@@ -293,15 +421,33 @@ export function Header() {
     return results.slice(0, 8);
   }, [searchQuery]);
 
+  // Feature 4: Keyboard navigation in suggestions
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
+      e.preventDefault();
+      handleSuggestionClick(suggestions[selectedSuggestionIndex]);
+    }
+  }, [showSuggestions, suggestions, selectedSuggestionIndex, handleSuggestionClick]);
+
   const totalEffects = effects.length;
   const totalCategories = 38;
 
   return (
     <motion.div
+      ref={headerRef}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="text-center mb-6 relative"
+      className="text-center mb-6 relative header-parallax"
+      style={{ transform: `translateY(${scrollY * 0.15}px)` }}
     >
       {/* Particle background */}
       <div className="absolute inset-0 overflow-hidden rounded-xl opacity-40">
@@ -348,7 +494,7 @@ export function Header() {
       </div>
 
       {/* Search Bar - full width on mobile */}
-      <div className="flex items-center gap-3 max-w-lg mx-auto mb-6 px-2 sm:px-0 relative z-10">
+      <div className="flex items-center gap-3 max-w-lg mx-auto mb-4 px-2 sm:px-0 relative z-10">
         <div className="relative flex-1">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
@@ -364,18 +510,40 @@ export function Header() {
                 setShowSuggestions(false);
               }
             }}
+            onKeyDown={handleSearchKeyDown}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
-            placeholder="Search effects... (press / to focus)"
+            placeholder={`Search effects... (${shortcutHint})`}
             aria-label="Search effects"
-            className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all ${
+            className={`w-full pl-10 pr-10 py-2.5 border rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all ${
               isDark
                 ? 'bg-[#111] border-gray-800 text-gray-200 placeholder:text-gray-600'
                 : 'bg-white border-gray-200 text-gray-800 placeholder:text-gray-400'
             }`}
           />
 
-          {/* Search Suggestions Dropdown */}
+          {/* Feature 4: Clear search X button */}
+          <AnimatePresence>
+            {searchQuery.trim() && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.15 }}
+                onClick={handleClearSearch}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-md transition-colors ${
+                  isDark
+                    ? 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* Search Suggestions Dropdown - Feature 4: keyboard nav + highlight */}
           <AnimatePresence>
             {showSuggestions && suggestions.length > 0 && searchQuery.trim() && (
               <motion.div
@@ -403,16 +571,18 @@ export function Header() {
                         handleSuggestionClick(s);
                       }}
                       className={`w-full text-left px-3 py-2.5 text-xs flex items-center gap-2.5 search-suggestion-item ${
-                        isDark
-                          ? 'text-gray-400 hover:text-gray-200'
-                          : 'text-gray-600 hover:text-gray-800'
+                        i === selectedSuggestionIndex
+                          ? isDark ? 'bg-emerald-500/10 text-emerald-300' : 'bg-emerald-500/10 text-emerald-700'
+                          : isDark
+                            ? 'text-gray-400 hover:text-gray-200'
+                            : 'text-gray-600 hover:text-gray-800'
                       }`}
                     >
                       {s.type === 'effect' && <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-400/70" />}
                       {s.type === 'category' && <FolderOpen className="w-3.5 h-3.5 shrink-0 text-blue-400/70" />}
                       {s.type === 'tag' && <Tag className="w-3.5 h-3.5 shrink-0 text-purple-400/70" />}
                       <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{s.text}</div>
+                        <div className="truncate font-medium">{highlightMatch(s.text, searchQuery, isDark)}</div>
                         {s.description && (
                           <div className={`text-[10px] truncate ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{s.description}</div>
                         )}
@@ -521,6 +691,9 @@ export function Header() {
           {isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </div>
+
+      {/* Feature 1: Effect of the Day Banner */}
+      <EffectOfTheDay isDark={isDark} />
 
       {/* Stats Row with animated counters + pulse glow */}
       <div className="flex flex-wrap justify-center gap-3 md:gap-4 relative z-10">

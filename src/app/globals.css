@@ -783,7 +783,18 @@ html {
   .modal-stagger-content,
   .animated-bg::before,
   .scroll-progress,
-  .sidebar-category-item::after {
+  .sidebar-category-item::after,
+  .morphing-blob-1,
+  .morphing-blob-2,
+  .typing-gradient-text,
+  .stat-pill-interactive:hover,
+  .preview-gradient-border::before,
+  .footer-shimmer-badge::before,
+  .card-mouse-glow::after,
+  .noise-overlay::after,
+  .page-transition,
+  .sidebar-scroll-highlight,
+  .card-glow-border::before {
     animation: none !important;
     transition: none !important;
   }
@@ -1528,4 +1539,505 @@ html {
 
 .bookmark-pop {
   animation: bookmark-pop 0.35s ease-in-out;
+}
+
+/* ========================================
+   ENHANCED SCROLLBAR WITH EMERALD ACCENT
+   ======================================== */
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #10b981, #1a1a2e);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #34d399, #10b981);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #10b981, #d1d5db);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #059669, #10b981);
+}
+
+/* ========================================
+   NOISE TEXTURE OVERLAY
+   ======================================== */
+
+.noise-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+.dark .noise-overlay::after {
+  opacity: 0.025;
+}
+
+/* ========================================
+   GLOW EFFECT FOR ACTIVE ELEMENTS
+   ======================================== */
+
+.emerald-glow-active {
+  box-shadow: 0 0 15px 3px rgba(16, 185, 129, 0.2), 0 0 30px 8px rgba(16, 185, 129, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+/* ========================================
+   MORPHING BLOB BACKGROUND ANIMATION
+   ======================================== */
+
+@keyframes blob-morph-1 {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    transform: translate(20px, -30px) scale(1.05);
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 50% 70% 60%;
+    transform: translate(-10px, 20px) scale(0.95);
+  }
+  75% {
+    border-radius: 60% 30% 50% 40% / 70% 40% 50% 60%;
+    transform: translate(15px, 10px) scale(1.02);
+  }
+}
+
+@keyframes blob-morph-2 {
+  0%, 100% {
+    border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    border-radius: 70% 30% 50% 60% / 30% 40% 70% 50%;
+    transform: translate(-25px, 15px) scale(0.98);
+  }
+  50% {
+    border-radius: 30% 50% 60% 70% / 60% 40% 50% 30%;
+    transform: translate(15px, -20px) scale(1.04);
+  }
+  75% {
+    border-radius: 50% 70% 30% 40% / 50% 60% 40% 70%;
+    transform: translate(-10px, -15px) scale(0.97);
+  }
+}
+
+.morphing-blob-1 {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+  animation: blob-morph-1 15s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.morphing-blob-2 {
+  position: fixed;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+  animation: blob-morph-2 18s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ========================================
+   CARD 3D TILT EFFECT
+   ======================================== */
+
+.card-3d-tilt {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform 0.15s ease-out;
+}
+
+/* ========================================
+   CARD MOUSE GLOW EFFECT
+   ======================================== */
+
+.card-mouse-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-mouse-glow::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 40%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.card-mouse-glow:hover::after {
+  opacity: 1;
+}
+
+/* ========================================
+   PREVIEW ANIMATED GRADIENT BORDER
+   ======================================== */
+
+@keyframes preview-border-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.preview-gradient-border {
+  position: relative;
+}
+
+.preview-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981);
+  background-size: 300% 300%;
+  animation: preview-border-flow 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.group:hover .preview-gradient-border::before {
+  opacity: 1;
+}
+
+/* ========================================
+   SIDEBAR CATEGORY HOVER MICRO-ANIMATIONS
+   ======================================== */
+
+@keyframes sidebar-item-scale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.sidebar-item-hover-glow {
+  transition: all 0.2s ease;
+}
+
+.sidebar-item-hover-glow:hover {
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.08), inset 0 0 12px rgba(16, 185, 129, 0.03);
+}
+
+/* ========================================
+   SIDEBAR PROGRESS INDICATOR
+   ======================================== */
+
+.sidebar-progress {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent, rgba(16, 185, 129, 0.2), transparent);
+  pointer-events: none;
+}
+
+.sidebar-progress-fill {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #10b981, #34d399);
+  border-radius: 1px;
+  transition: height 0.3s ease;
+  pointer-events: none;
+}
+
+/* ========================================
+   HEADER PARALLAX EFFECT
+   ======================================== */
+
+.header-parallax {
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}
+
+/* ========================================
+   TYPING SUBTITLE GRADIENT TEXT
+   ======================================== */
+
+.typing-gradient-text {
+  background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6, #10b981);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* ========================================
+   STAT PILL MICRO-INTERACTIONS
+   ======================================== */
+
+@keyframes stat-pill-pulse-hover {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  50% { box-shadow: 0 0 16px 4px rgba(16, 185, 129, 0.25); }
+}
+
+@keyframes stat-pill-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.stat-pill-interactive {
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.stat-pill-interactive:hover {
+  animation: stat-pill-pulse-hover 1.5s ease-in-out infinite;
+  transform: translateY(-2px);
+  background-size: 200% 200%;
+  animation: stat-pill-gradient-shift 3s ease infinite, stat-pill-pulse-hover 1.5s ease-in-out infinite;
+}
+
+/* ========================================
+   MODAL BLUR INCREASE ON TAB CHANGE
+   ======================================== */
+
+.modal-tab-blur {
+  transition: backdrop-filter 0.3s ease;
+}
+
+/* ========================================
+   TAB SLIDE ANIMATION (DIRECTIONAL)
+   ======================================== */
+
+@keyframes tab-slide-in-left {
+  0% { transform: translateX(-30px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes tab-slide-in-right {
+  0% { transform: translateX(30px); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.tab-slide-in-left {
+  animation: tab-slide-in-left 0.3s ease-out;
+}
+
+.tab-slide-in-right {
+  animation: tab-slide-in-right 0.3s ease-out;
+}
+
+/* ========================================
+   CODE BLOCK GRADIENT OVERLAY AT EDGES
+   ======================================== */
+
+.code-block-overlay {
+  position: relative;
+}
+
+.code-block-overlay::before,
+.code-block-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.3s ease;
+}
+
+.code-block-overlay::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(10, 10, 10, 0.6) 0%, transparent 100%);
+}
+
+.code-block-overlay::after {
+  right: 0;
+  background: linear-gradient(-90deg, rgba(10, 10, 10, 0.6) 0%, transparent 100%);
+}
+
+.dark .code-block-overlay::before {
+  background: linear-gradient(90deg, rgba(10, 10, 10, 0.8) 0%, transparent 100%);
+}
+
+.dark .code-block-overlay::after {
+  background: linear-gradient(-90deg, rgba(10, 10, 10, 0.8) 0%, transparent 100%);
+}
+
+/* Hide overlays when not scrollable */
+.code-block-overlay:not(:hover)::before,
+.code-block-overlay:not(:hover)::after {
+  opacity: 0;
+}
+
+.code-block-overlay:hover::before,
+.code-block-overlay:hover::after {
+  opacity: 1;
+}
+
+/* ========================================
+   DIFFICULTY BUTTON RIPPLE ON CLICK
+   ======================================== */
+
+@keyframes diff-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.diff-ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.diff-ripple-container .ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.3);
+  pointer-events: none;
+  animation: diff-ripple 0.6s ease-out forwards;
+}
+
+/* ========================================
+   FILTER TAG AREA EXPAND/COLLAPSE
+   ======================================== */
+
+@keyframes tag-area-expand {
+  0% { max-height: 0; opacity: 0; }
+  100% { max-height: 200px; opacity: 1; }
+}
+
+@keyframes tag-area-collapse {
+  0% { max-height: 200px; opacity: 1; }
+  100% { max-height: 0; opacity: 0; }
+}
+
+.tag-area-expand {
+  animation: tag-area-expand 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+/* ========================================
+   FILTER GRADIENT SEPARATOR
+   ======================================== */
+
+.filter-gradient-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2) 30%, rgba(16, 185, 129, 0.3) 50%, rgba(16, 185, 129, 0.2) 70%, transparent);
+  margin: 8px 0;
+}
+
+/* ========================================
+   FOOTER ANIMATED COUNTERS
+   ======================================== */
+
+@keyframes counter-glow {
+  0%, 100% { text-shadow: none; }
+  50% { text-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }
+}
+
+.footer-counter {
+  display: inline-block;
+  transition: color 0.3s ease;
+}
+
+.footer-counter.counting {
+  animation: counter-glow 0.5s ease-out;
+}
+
+/* ========================================
+   FOOTER COMMUNITY STATS CARD HOVER
+   ======================================== */
+
+@keyframes community-card-lift {
+  0% { transform: translateY(0); box-shadow: none; }
+  100% { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15); }
+}
+
+.community-stat-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.community-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* ========================================
+   FOOTER SHIMMER BADGE
+   ======================================== */
+
+@keyframes badge-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.footer-shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-shimmer-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(16, 185, 129, 0.2) 45%, rgba(52, 211, 153, 0.3) 50%, rgba(16, 185, 129, 0.2) 55%, transparent 75%);
+  background-size: 250% 100%;
+  animation: badge-shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ========================================
+   SMOOTH PAGE TRANSITIONS
+   ======================================== */
+
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.page-transition {
+  animation: page-enter 0.4s ease-out;
+}
+
+/* ========================================
+   SIDEBAR SCROLL-INTO-VIEW ANIMATION
+   ======================================== */
+
+@keyframes sidebar-scroll-highlight {
+  0% { background-color: rgba(16, 185, 129, 0.15); }
+  100% { background-color: transparent; }
+}
+
+.sidebar-scroll-highlight {
+  animation: sidebar-scroll-highlight 0.8s ease-out;
 }

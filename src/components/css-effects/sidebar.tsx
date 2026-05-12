@@ -5,7 +5,7 @@ import { useEffectsStore, featuredEffectIds, getCategoryColor } from '@/lib/effe
 import type { UserCollection, BookmarkFolder } from '@/lib/effects-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronDown, ChevronRight, Flame, Heart, Clock, GitCompare, Star, Sparkles, ArrowRight, Bookmark, FolderPlus, Trash2, Plus } from 'lucide-react';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 export function Sidebar() {
   const {
@@ -63,6 +63,8 @@ export function Sidebar() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
   const [spotlightVisible, setSpotlightVisible] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const categoryRefs = useRef<Record<string, HTMLButtonElement>>({});
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (sidebarRef.current) {
@@ -78,6 +80,34 @@ export function Sidebar() {
     setSelectedUserCollection(null);
     setSidebarOpen(false);
   };
+
+  // Scroll-into-view animation for selected category
+  useEffect(() => {
+    if (selectedCategory && selectedCategory !== 'all' && categoryRefs.current[selectedCategory]) {
+      categoryRefs.current[selectedCategory].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+      categoryRefs.current[selectedCategory].classList.add('sidebar-scroll-highlight');
+      setTimeout(() => {
+        categoryRefs.current[selectedCategory]?.classList.remove('sidebar-scroll-highlight');
+      }, 800);
+    }
+  }, [selectedCategory]);
+
+  // Track scroll progress for mini progress indicator
+  useEffect(() => {
+    const scrollContainer = sidebarRef.current?.querySelector('.sidebar-scroll-snap');
+    if (!scrollContainer) return;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollHeight > clientHeight) {
+        setScrollProgress((scrollTop / (scrollHeight - clientHeight)) * 100);
+      }
+    };
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleCollectionClick = (collectionId: string) => {
     if (selectedCollection === collectionId) {
@@ -154,8 +184,12 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Categories - with scroll snap */}
+      {/* Categories - with scroll snap and progress indicator */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 sidebar-scroll-snap relative z-10">
+        {/* Mini progress indicator on right edge */}
+        <div className="sidebar-progress">
+          <div className="sidebar-progress-fill" style={{ height: `${scrollProgress}%` }} />
+        </div>
 
         {/* ⭐ Featured Section - ABOVE categories */}
         <div className="mb-4">
@@ -239,8 +273,9 @@ export function Sidebar() {
             return (
               <button
                 key={cat.id}
+                ref={(el) => { if (el) categoryRefs.current[cat.id] = el; }}
                 onClick={() => handleCategoryClick(cat.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group sidebar-category-item ${isOdd ? 'sidebar-row-odd' : 'sidebar-row-even'} ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 relative group sidebar-category-item sidebar-item-hover-glow ${isOdd ? 'sidebar-row-odd' : 'sidebar-row-even'} ${
                   isActive
                     ? 'sidebar-active-slide sidebar-indicator-slide active bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 sidebar-pulse-active'
                     : isDark
