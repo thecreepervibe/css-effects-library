@@ -19,6 +19,16 @@ import { effectsNewBatch7 } from './effects-new-batch-7';
 import { effectsNewBatch8 } from './effects-new-batch-8';
 import { effectsNewBatch9 } from './effects-new-batch-9';
 import { effectsNewBatch10 } from './effects-new-batch-10';
+import { effectsNewBatch11 } from './effects-new-batch-11';
+import { effectsNewBatch12 } from './effects-new-batch-12';
+import { effectsNewBatch13 } from './effects-new-batch-13';
+import { effectsNewBatch14 } from './effects-new-batch-14';
+import { effectsNewBatch15 } from './effects-new-batch-15';
+import { effectsNewBatch16 } from './effects-new-batch-16';
+import { effectsNewBatch17 } from './effects-new-batch-17';
+import { effectsNewBatch18 } from './effects-new-batch-18';
+import { effectsNewBatch19 } from './effects-new-batch-19';
+import { effectsNewBatch20 } from './effects-new-batch-20';
 
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
@@ -5654,6 +5664,16 @@ const allBatchEffects: CSSEffect[] = [
   ...effectsNewBatch8,
   ...effectsNewBatch9,
   ...effectsNewBatch10,
+  ...effectsNewBatch11,
+  ...effectsNewBatch12,
+  ...effectsNewBatch13,
+  ...effectsNewBatch14,
+  ...effectsNewBatch15,
+  ...effectsNewBatch16,
+  ...effectsNewBatch17,
+  ...effectsNewBatch18,
+  ...effectsNewBatch19,
+  ...effectsNewBatch20,
 ];
 
 // Push batch effects into the existing exported array so all references stay valid
